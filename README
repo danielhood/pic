@@ -1,3 +1,9 @@
 Repository for PIC Microcontroller projects.
 
+PIC18F2431/asm/midi.cv.X
+------------------------
+This is the only real project, the others are basically throwaway tests and samples.
 
+This project drives the MIDI to CV controller box that was built in Jan 2012. 
+
+It listens to all midi channels, and pushes CV Gate, Pith, Velocity, and Mod Controlelr (CC1) outputs.
