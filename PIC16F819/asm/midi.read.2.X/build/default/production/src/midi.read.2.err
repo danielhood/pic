@@ -1,0 +1,7 @@
+Message[302] SRC\MIDI.READ.2.ASM 99 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\MIDI.READ.2.ASM 100 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\MIDI.READ.2.ASM 101 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\MIDI.READ.2.ASM 105 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\MIDI.READ.2.ASM 108 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\MIDI.READ.2.ASM 111 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[305] SRC\MIDI.READ.2.ASM 155 : Using default destination of 1 (file).

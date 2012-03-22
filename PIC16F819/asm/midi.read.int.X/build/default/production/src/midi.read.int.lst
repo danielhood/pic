@@ -1,0 +1,569 @@
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 ; Main entry point
+                      00002 
+                      00003 ; ------------------------------------------------------------------------------
+                      00004 ; Hardware Details
+                      00005 ;       - Using PIC16F819
+                      00006 ;       - Clock: 20MHz Crystal across OSC1/OSC2
+                      00007 ;       - PORTB:
+                      00008 ;               - B0 is Midi Input from 6N137 Optocopuler
+                      00009 ;               - B6:B7 is for UP00B Programmer
+                      00010 ;               - B2: 10-bit PWM output ('fake' CV analog out).  The PIC18F2431 can support 4 14-bit PWM
+                             outs.
+                      00011 ;               - B1,B3:B5 currently unsued
+                      00012 ;       - PORTA:
+                      00013 ;               - Debugging output data on A0:A4
+                      00014 ;               - A5 is MCLR/Vpp for UP00B Programmer
+                      00015 ;               - A6:A7 is for the crystal
+                      00016 
+                      00017 
+                      00018         list    P=PIC16F819
+                      00019 
+                      00020 #include p16f819.inc
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F819 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00442         LIST
+                      00021 #include inc/vars.inc
+                      00001 ; ------------------------------------------------------------------------------
+                      00002 ; Variables
+                      00003 
+                      00004         cblock  0x0020          ; start addresses in user register space
+                      00005 
+                      00006 ;------ Shared variables
+  00000020            00007         CUR_BYTE                ; Completed byte read by service code
+                      00008 
+                      00009 ;------ service.asm variables
+  00000021            00010         W_TMP                   ; Storage for W register during interrupt
+  00000022            00011         ST_TMP                  ; Storage for STATUS register during interrupt
+  00000023            00012         BITS_READ               ; Holds number of bits left to read
+  00000024            00013         TMP_BYTE                ; Working byte being read
+  00000025            00014         BIT_READ_FLAGS          ; Flags for status of bit read operationss
+                      00015                                 ;       READING - Bits are being read
+                      00016                                 ;       NEW_BYTE - A new byte has been written to CUR_BYTE
+                      00017 
+                      00018 ;------ midi.asm variables
+  00000026            00019         CV_MSB                  ; Scaled CV out value (MSB for CCP1RL)
+  00000027            00020         CV_LSB                  ; Scaled CV out value (LSB mask for CCP1CON<5:4>)
+  00000028            00021         BYTE_COUNT              ; Counts number of bytes received
+                      00022 ;------ midi.read.int.asm variables (entry point)
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00023 
+                      00024         endc
+                      00025 
+                      00026 
+                      00027 ; ------------------------------------------------------------------------------
+                      00028 ; Constants
+                      00029 ;
+  00000000            00030 CV_DATA:        equ     0x00    ; EEPROM base Address of CV Controller data lookup
+  00000080            00031 CV_NOTE:        equ     0x80    ; EEPROM base Address CV Note data lookup
+                      00032 
+  000000A0            00033 CLK:            equ     0xA0    ; Peroid for TMR2 and max value for PWM duty cycle
+                      00034 
+                      00035 ; BIT_READ_FLAGS
+  00000000            00036 READING:        equ     0x00
+  00000001            00037 NEW_BYTE:       equ     0x01
+                      00022 
+                      00023 
+                      00024 ; ------------------------------------------------------------------------------
+                      00025 ; External code refs
+                      00026 ;
+  0000                00027         extern  _MAIN           ; Main App code
+  0000                00028         extern  _SERVICE        ; Interrupt handlers
+  0000                00029         extern  _SETUP          ; Setup code
+                      00030 
+                      00031 ; ------------------------------------------------------------------------------
+                      00032 ; CONFIG
+                      00033 ;       - Use 20MHz crystal, leaing all PORTB ports as I/O
+                      00034 ;       - Disable watchdog timer
+                      00035 ;       - PWM on RB2
+2007   3FA2           00036         __config        _HS_OSC & _WDT_OFF & _CCPMX_RB2 & _BOREN_OFF & _PWRTE_ON
+                      00037 
+                      00038 
+                      00039 ; ------------------------------------------------------------------------------
+                      00040 ; Main entry and RESET vector
+                      00041 ;
+                      00042 .RESET  org     0x0000
+0000   2???           00043         call    _SETUP          ; Init hardware
+0001   2???           00044         goto    _MAIN           ; Main app code
+                      00045 
+                      00046 
+                      00047 ; ------------------------------------------------------------------------------
+                      00048 ; Interrupt vector
+                      00049 ;
+                      00050 .IVEC   org     0x0004
+0004   2???           00051         goto    _SERVICE        ; Points to interrupt service routine
+                      00052 
+                      00053 
+                      00054 ; ------------------------------------------------------------------------------
+                      00055 ; EEPROM Data => CV_DATA
+                      00056 ;
+                      00057 ;       This data set holds a lookup table for scaling 127 bit CV Controler
+                      00058 ;       data values to a 160 bit based value.
+                      00059 ;               - This  table contains 128 values from 0x2100 to 0x217F.
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00060 ;               - This maps onto EEPROM data addresses 0x00 to 0x7F.
+                      00061 ;               - Base EEPROM address refrenced by global var CV_DATA (0x7F)
+                      00062 ;       Calculated: y = x * 160 / 127;
+                      00063 ;
+                      00064         org     0x2100
+2100   0000 0001 0002 00065         de      0x00, 0x01, 0x02, 0x03, 0x05, 0x06, 0x07, 0x08
+       0003 0005 0006 
+       0007 0008 
+2108   000A 000B 000C 00066         de      0x0a, 0x0b, 0x0c, 0x0d, 0x0f, 0x10, 0x11, 0x12
+       000D 000F 0010 
+       0011 0012 
+2110   0014 0015 0016 00067         de      0x14, 0x15, 0x16, 0x17, 0x19, 0x1a, 0x1b, 0x1c
+       0017 0019 001A 
+       001B 001C 
+2118   001E 001F 0020 00068         de      0x1e, 0x1f, 0x20, 0x22, 0x23, 0x24, 0x25, 0x27
+       0022 0023 0024 
+       0025 0027 
+2120   0028 0029 002A 00069         de      0x28, 0x29, 0x2a, 0x2c, 0x2d, 0x2e, 0x2f, 0x31
+       002C 002D 002E 
+       002F 0031 
+2128   0032 0033 0034 00070         de      0x32, 0x33, 0x34, 0x36, 0x37, 0x38, 0x39, 0x3b
+       0036 0037 0038 
+       0039 003B 
+2130   003C 003D 003E 00071         de      0x3c, 0x3d, 0x3e, 0x40, 0x41, 0x42, 0x44, 0x45
+       0040 0041 0042 
+       0044 0045 
+2138   0046 0047 0049 00072         de      0x46, 0x47, 0x49, 0x4a, 0x4b, 0x4c, 0x4e, 0x4f
+       004A 004B 004C 
+       004E 004F 
+2140   0050 0051 0053 00073         de      0x50, 0x51, 0x53, 0x54, 0x55, 0x56, 0x58, 0x59
+       0054 0055 0056 
+       0058 0059 
+2148   005A 005B 005D 00074         de      0x5a, 0x5b, 0x5d, 0x5e, 0x5f, 0x61, 0x62, 0x63
+       005E 005F 0061 
+       0062 0063 
+2150   0064 0066 0067 00075         de      0x64, 0x66, 0x67, 0x68, 0x69, 0x6b, 0x6c, 0x6d
+       0068 0069 006B 
+       006C 006D 
+2158   006E 0070 0071 00076         de      0x6e, 0x70, 0x71, 0x72, 0x73, 0x75, 0x76, 0x77
+       0072 0073 0075 
+       0076 0077 
+2160   0078 007A 007B 00077         de      0x78, 0x7a, 0x7b, 0x7c, 0x7d, 0x7f, 0x80, 0x81
+       007C 007D 007F 
+       0080 0081 
+2168   0083 0084 0085 00078         de      0x83, 0x84, 0x85, 0x86, 0x88, 0x89, 0x8a, 0x8b
+       0086 0088 0089 
+       008A 008B 
+2170   008D 008E 008F 00079         de      0x8d, 0x8e, 0x8f, 0x90, 0x92, 0x93, 0x94, 0x95
+       0090 0092 0093 
+       0094 0095 
+2178   0097 0098 0099 00080         de      0x97, 0x98, 0x99, 0x9a, 0x9c, 0x9d, 0x9e, 0xa0
+       009A 009C 009D 
+       009E 00A0 
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00081 
+                      00082 ; ------------------------------------------------------------------------------
+                      00083 ; EEPROM Data => CV_NOTE
+                      00084 ;
+                      00085 ;       This data set holds a lookup table for scaling 127-bit MIDI note values to a
+                      00086 ;       160 bit based value.  The supported note values are only for 21 to 81.
+                      00087 ;               - This  table contains 128 values from 0x2180 to 0x21FF
+                      00088 ;               - This maps onto EEPROM data addresses 0x80 to 0xFF
+                      00089 ;               - Base EEPROM address refrenced by global var CV_NOTE (0x80)
+                      00090 ;       C4 (60) = 3.0V
+                      00091 ;       Calculated: y = (x - 24)* 160 / (84-24);
+                      00092 ;
+                      00093         org     0x2180
+2180   0000 0000 0000 00094         de      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+       0000 0000 0000 
+       0000 0000 
+2188   0000 0000 0000 00095         de      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00
+       0000 0000 0000 
+       0000 0000 
+2190   0000 0000 0000 00096         de      0x00, 0x00, 0x00, 0x00, 0x00, 0xf8, 0xfb, 0xfe
+       0000 0000 00F8 
+       00FB 00FE 
+2198   0000 0002 0005 00097         de      0x00, 0x02, 0x05, 0x08, 0x0a, 0x0d, 0x10, 0x12
+       0008 000A 000D 
+       0010 0012 
+21A0   0015 0018 001A 00098         de      0x15, 0x18, 0x1a, 0x1d, 0x20, 0x22, 0x25, 0x28
+       001D 0020 0022 
+       0025 0028 
+21A8   002A 002D 0030 00099         de      0x2a, 0x2d, 0x30, 0x32, 0x35, 0x38, 0x3a, 0x3d
+       0032 0035 0038 
+       003A 003D 
+21B0   0040 0042 0045 00100         de      0x40, 0x42, 0x45, 0x48, 0x4a, 0x4d, 0x50, 0x52
+       0048 004A 004D 
+       0050 0052 
+21B8   0055 0058 005A 00101         de      0x55, 0x58, 0x5a, 0x5d, 0x60, 0x62, 0x65, 0x68
+       005D 0060 0062 
+       0065 0068 
+21C0   006A 006D 0070 00102         de      0x6a, 0x6d, 0x70, 0x72, 0x75, 0x78, 0x7a, 0x7d
+       0072 0075 0078 
+       007A 007D 
+21C8   0080 0082 0085 00103         de      0x80, 0x82, 0x85, 0x88, 0x8a, 0x8d, 0x90, 0x92
+       0088 008A 008D 
+       0090 0092 
+21D0   0095 0098 00A0 00104         de      0x95, 0x98, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0
+       00A0 00A0 00A0 
+       00A0 00A0 
+21D8   00A0 00A0 00A0 00105         de      0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0
+       00A0 00A0 00A0 
+       00A0 00A0 
+21E0   00A0 00A0 00A0 00106         de      0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0
+       00A0 00A0 00A0 
+       00A0 00A0 
+21E8   00A0 00A0 00A0 00107         de      0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+       00A0 00A0 00A0 
+       00A0 00A0 
+21F0   00A0 00A0 00A0 00108         de      0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0
+       00A0 00A0 00A0 
+       00A0 00A0 
+21F8   00A0 00A0 00A0 00109         de      0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0, 0xa0
+       00A0 00A0 00A0 
+       00A0 00A0 
+                      00110 
+3FA2                  00111         end
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  6
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+.IVEC                             00000004
+.RESET                            00000000
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BF                                00000000
+BITS_READ                         00000023
+BIT_READ_FLAGS                    00000025
+BYTE_COUNT                        00000028
+C                                 00000000
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CKE                               00000006
+CKP                               00000004
+CLK                               000000A0
+CUR_BYTE                          00000020
+CV_DATA                           00000000
+CV_LSB                            00000027
+CV_MSB                            00000026
+CV_NOTE                           00000080
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+D_A                               00000005
+D_NOT_A                           00000005
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FREE                              00000004
+FSR                               00000004
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOFS                              00000002
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRP                               00000007
+NEW_BYTE                          00000001
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OPTION_REG                        00000081
+OSCCON                            0000008F
+OSCTUNE                           00000090
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PORTB                             00000006
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+PS2                               00000002
+PSA                               00000003
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RA7                               00000007
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RD                                00000000
+READING                           00000000
+READ_WRITE                        00000002
+RP0                               00000005
+RP1                               00000006
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SMP                               00000007
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+ST_TMP                            00000022
+T0CS                              00000005
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+TMP_BYTE                          00000024
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISA7                            00000007
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TUN5                              00000005
+UA                                00000001
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+W_TMP                             00000021
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_BOREN_OFF                        00003FBF
+_BOREN_ON                         00003FFF
+_CCP1_RB2                         00003FFF
+_CCP1_RB3                         00002FFF
+_CCPMX_RB2                        00003FFF
+_CCPMX_RB3                        00002FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+_CP_ON                            00001FFF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_EXTCLK                           00003FEF
+_EXTRC_CLKOUT                     00003FFF
+_EXTRC_IO                         00003FFE
+_FOSC_EC                          00003FEF
+_FOSC_EXTRCCLK                    00003FFF
+_FOSC_EXTRCIO                     00003FFE
+_FOSC_HS                          00003FEE
+_FOSC_INTOSCCLK                   00003FFD
+_FOSC_INTOSCIO                    00003FFC
+_FOSC_LP                          00003FEC
+_FOSC_XT                          00003FED
+_HS_OSC                           00003FEE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_INTRC_CLKOUT                     00003FFD
+_INTRC_IO                         00003FFC
+_LP_OSC                           00003FEC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_MAIN                             00000000
+_MCLRE_OFF                        00003FDF
+_MCLRE_ON                         00003FFF
+_MCLR_OFF                         00003FDF
+_MCLR_ON                          00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_SERVICE                          00000000
+_SETUP                            00000000
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+MPASM  5.43                 MIDI.READ.INT.ASM   2-22-2012  10:22:26         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_WRT_1024                         00003BFF
+_WRT_1536                         000039FF
+_WRT_512                          00003DFF
+_WRT_ENABLE_1024                  00003BFF
+_WRT_ENABLE_1536                  000039FF
+_WRT_ENABLE_512                   00003DFF
+_WRT_ENABLE_OFF                   00003FFF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FED
+__16F819                          00000001
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     0 reported,     0 suppressed
+
+

@@ -1,0 +1,631 @@
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  1
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00001 #include <p16f819.inc>
+                      00001         LIST
+                      00002 
+                      00003 ;==========================================================================
+                      00004 ;  MPASM PIC16F819 processor include
+                      00005 ; 
+                      00006 ;  (c) Copyright 1999-2011 Microchip Technology, All rights reserved
+                      00007 ;==========================================================================
+                      00008 
+                      00442         LIST
+                      00002 
+                      00003 
+                      00004 ; Configuration Requirements
+                      00005 ; (note PIC16 uses __CONFIG, PIC18 ues CONFIG
+                      00006 ;       - internal clock
+                      00007 ;       - watch dog timer off (otherwise app won't start)
+2007   3FF8           00008     __CONFIG    _INTRC_IO & _WDT_OFF
+                      00009 ;   __CONFIG    _HS_OSC & _WDT_OFF
+                      00010 
+  00000000            00011 MIDI:   equ h'0';               ; MIDI In is connected to B0
+  00000020            00012 BYTE:   equ h'20'               ;Temporary MIDI data storage
+  00000021            00013 CHANNEL:equ h'21'               ;Working MIDI channel
+  00000022            00014 TEMP1:  equ h'22'               ;temporary data manipulation storage file 1
+  00000023            00015 TEMP2:  equ h'23'               ;temporary data manipulation storage file 2
+  00000024            00016 SCRATCHNOTE:    equ h'24'       ;Stores the value of any note that is to be deleted from stack
+  00000025            00017 LASTSTATUSBYTE: equ h'25'       ;Stores the last status byte received, *if processed*- needed for Runnin
+                            g Status support.
+  00000026            00018 NOTESP: equ h'26'               ;Note Stack Pointer
+  00000027            00019 NOTESTACK:  equ h'27'                           ;<<< 10 byptes (27h to 31h) reserved for note stack >>>
+                      00020 
+                      00021         cblock  0x20    ; start addresses in user register space
+  00000020            00022         Delay:2 ; array of two bytes - Delay+0 and Delay+1
+                      00023 
+                      00024         endc
+                      00025 
+                      00026         org     0x0000
+0000                  00027 _STARTUP:
+                      00028         ;pagesel        _MAIN
+0000   2???           00029         goto    _MAIN
+                      00030 
+                      00031         org 0x004               ; interrupt vectors
+                      00032         ; no iv's defined
+                      00033 
+0004                  00034 _MAIN:
+                      00035         ; Set Internal Oscillator to 4Mhz => 110
+0004   1683 1303      00036         banksel OSCCON
+                      00037         ;bsf     OSCCON, IRCF0
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0006   168F           00038         bsf     OSCCON, IRCF1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0007   170F           00039         bsf     OSCCON, IRCF2
+                      00040 
+                      00041         ; Configure PORTA
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  2
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0008   1283 1303      00042         banksel PORTA   ; Init and Clear PORTA
+000A   0185           00043         clrf    PORTA
+000B   0985           00044         comf    PORTA,F   ; Flip on
+                      00045 
+000C   3006           00046         movlw   0x06    ; All digital
+000D   1683 1303      00047         banksel ADCON1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+000F   009F           00048         movwf   ADCON1
+                      00049 
+0010   3000           00050         movlw   0x00    ; All output
+0011   1683 1303      00051         banksel TRISA   ; This isn't needed since bank is already set by ADCON1
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+0013   0085           00052         movwf   TRISA
+0014   1283 1303      00053         banksel PORTA
+                      00054 
+0016   01A0           00055         clrf    BYTE    ; Set BYTE to 0
+                      00056 
+0017                  00057 simple_read:                    ; This routine just tests to see if we're getting any bit data on the MI
+                            DI port
+0017   3001           00058         movlw b'00000001'       ; set RB0 as read
+0018   1683 1303      00059         banksel TRISB
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+001A   0086           00060         movwf   TRISB
+001B   1283 1303      00061         banksel PORTB
+001D                  00062 wait_for_start_bit:
+001D   1806           00063         btfsc   PORTB,MIDI      ; Normal state is high, so start bit will be read as a 0
+001E   2???           00064         goto    wait_for_start_bit
+001F                  00065 wait_for_bit_change:
+001F   1C06           00066         btfss   PORTB,MIDI      ; Wait for input to go high again
+0020   2???           00067         goto    wait_for_bit_change
+0021   0AA0           00068         incf    BYTE,F          ; Increment counter
+0022   0820           00069         movf    BYTE,W            ; Write current value to PORTA
+0023   0085           00070         movWf   PORTA
+0024   2???           00071         goto    wait_for_start_bit
+                      00072 
+0025                  00073 start:                          ;***System waiting for a new MIDI message***
+                      00074         ;bsf PORTA,1            ;Port A bit 1 must always be returned to high, as it is changed to 0 to 
+                            write data.
+0025   2???           00075         call getByte            ;Get the first MIDI byte for the new message
+0026   17A4           00076         BSF SCRATCHNOTE,7       ;Will have been made use of by now and must be disabled. Makes sure that
+                             SCRATCNOTE
+0027   1724           00077         BSF SCRATCHNOTE,6       ;holds an invalid note value.
+                      00078 
+                      00079         ;push the byte to port A for now to simply display retrieved data
+0028   0820           00080         movf BYTE,W
+0029   0085           00081         movwf PORTA
+002A   2???           00082         goto start
+                      00083 
+002B                  00084 processFirstByte:               ;***Process the Status Byte***
+                      00085                                 ;!!!This subroutine manipulates the contents of BYTE!!!
+002B   1FA0           00086         btfss BYTE,7            ;If the MSB in the byte is 0, it must be Running Status information. Bra
+                            nch accordingly
+002C   2???           00087         goto processRunningStatus       ;to processRunningStatus.
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  3
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00088                                 ;
+002D   0820           00089         movf BYTE,W             ;
+002E   00A3           00090         movwf TEMP2             ;Keep a record of this status byte- may be needed later for running stat
+                            us support.
+                      00091                                 ;A record is kept of it only if this version can handle the particular m
+                            essage type.
+                      00092                                 ;Iff so, the status byte is recorded from TEMP2 into LASTSTATUSBYTE in t
+                            he respective
+                      00093                                 ;message handling routine.
+                      00094                                 ;
+002F   39F0           00095         andlw b'11110000'       ;Check to see if the received status byte is a system message, or the st
+                            art of a
+0030   3AF0           00096         xorlw b'11110000'       ;2 or 3 byte system message. If so, handleSystemMessage is CALLED to dea
+                            l with the
+0031   1D03           00097         btfss STATUS,Z          ;system message. Once the system message has been dealt with, the progra
+                            m returns
+                      00098 ;       goto getchan            ;back to here...
+                      00099 ;       call handleSystemMessage;
+0032   2???           00100         goto start              ;...and a jump is then made back to start.
+                      00101 
+                      00102 
+0033                  00103 processRunningStatus:           ;***Process data bytes that have been sent without a status byte***
+0033   0825           00104         movf LASTSTATUSBYTE,W   ;Must move the last status byte into TEMP1 for manipulation. No manipula
+                            tion is to
+0034   00A2           00105         movwf TEMP1             ;be done with BYTE here- it carries data and that data is to be dealt wi
+                            th in the
+                      00106                                 ;appropriate section.
+                      00107                                 ;
+0035   300F           00108         movlw b'00001111'       ;Extract channel number from *last received* Status Byte.
+0036   0522           00109         andwf TEMP1,W           ;
+0037   0621           00110         xorwf CHANNEL,W         ;Branch back to start if wrong channel.
+0038   1D03           00111         btfss STATUS,Z          ;
+0039   2???           00112         goto start              ;
+003A   0EA2           00113         swapf TEMP1,F           ;Otherwise swap nybbles in Status Byte and
+003B   300F           00114         movlw b'00001111'       ;extract the Message Type.
+003C   05A2           00115         andwf TEMP1,F           ;
+003D   0822           00116         movf TEMP1,W            ;Branch to appropriate message handling
+003E   0782           00117         addwf PCL,F             ;routine according to the type of message.
+003F   2???           00118         goto start              ;0000 - keep this here- will be accessed if LASTSTATUSBYTE contains the 
+                            null value, 0.
+0040   0000           00119         nop                     ;
+0041   0000           00120         nop                     ;
+0042   0000           00121         nop                     ;***ALL NOPs ESSENTIAL FOR CORRECT LOOKUP TABLE OPERATION***
+0043   0000           00122         nop                     ;
+0044   0000           00123         nop                     ;
+0045   0000           00124         nop                     ;
+0046   0000           00125         nop                     ;
+0047   2???           00126         goto handleRunningStatusNoteOff      ;1000   note off
+0048   2???           00127         goto handleRunningStatusNoteOn       ;1001   note on
+0049   2???           00128         goto start                           ;1010   poly key pressure
+004A   2???           00129         goto handleRunningStatusController   ;1011   control change
+004B   2???           00130         goto start                           ;1100   program change
+004C   2???           00131         goto start                           ;1101   overall key pressure
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  4
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+004D   2???           00132         goto start                           ;1110   pitch wheel
+004E   2???           00133         goto start                           ;1111   SYSTEM MESSAGES- not currently implemented.
+                      00134 
+004F                  00135 handleRunningStatusNoteOff:
+004F   2???           00136     goto start
+                      00137 
+0050                  00138 handleRunningStatusNoteOn:
+0050   2???           00139     goto start
+                      00140 
+0051                  00141 handleRunningStatusController:
+0051   2???           00142     goto start
+                      00143 
+                      00144 
+0052                  00145 getByte:                        ;*****RECEIVE SINGLE MIDI BYTE*****
+0052                  00146 waitForIdle:                    ;***This subroutine also deals with NoteStack updating and channel switc
+                            h checking***
+0052   1C06           00147         btfss PORTB,MIDI           ;Make sure input is 1 first
+0053   2???           00148         goto waitForIdle        ;
+0054                  00149 waitForStartBit:                ;Wait for start bit of MIDI byte (low pulse)
+0054   1806           00150         btfsc PORTB,MIDI           ;
+0055   2???           00151         goto waitForStartBit    ;
+0056   1003           00152         bcf STATUS,C            ;initial setup
+0057   3080           00153         movlw b'10000000'       ;
+0058   00A0           00154         movwf BYTE              ;
+                      00155                                 ;
+0059   308F           00156         movlw b'10001111'       ;Check least significant nybble on port B for the current MIDI channel s
+                            etting,
+005A   1683 1303      00157         banksel TRISB           ;and put that value into CHANNEL. The LS nybble of Port B are made input
+                            s to do this.
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+005C   0086           00158         movwf TRISB             ;They are put back to outputs in the LOOP section.
+005D   1283 1303      00159         banksel PORTB
+005F   0806           00160         movf PORTB,W            ;
+0060   391E           00161         andlw b'00011110'       ; Channel is selected on DIP switch connected to B1 to B4
+0061   00A1           00162         movwf CHANNEL           ;
+                      00163 
+0062   0000           00164         nop                     ;Five extra NOP's added 16-8-99. These compensate for the fact that the 
+                            bit is sampled
+0063   0000           00165         nop                     ;five microseconds before, and not at the end, of the 32uS 'timing' loop
+                            . This should
+0064   0000           00166         nop                     ;cure any problems with slow low-high transitions.
+0065   0000           00167         nop                     ;
+0066   0000           00168         nop                     ;
+                      00169 
+0067   0000           00170         nop                     ;
+0068   0000           00171         nop                     ;***ALL NOPs ESSENTIAL FOR CORRECT DATA SYNC***
+                      00172                                 ;
+                      00173                                 ;
+0069   3027           00174         movlw NOTESTACK         ;initial setup for Note Stack Updating.
+006A   0084           00175         movwf FSR               ;Points FSR (File Special Register) at the next lowest note stack positi
+                            on.
+                      00176 
+006B                  00177 LOOP:                           ;
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+                      00178                                 ;************************Note Stack Updating*************************
+                      00179                                 ;Must be 20 steps long no matter which branches are taken to ensure accu
+                            rately timed MIDI reception
+                      00180                                 ;
+006B   0800           00181         movf INDF,W             ;Write the value 10000000 into current stack position if it contains
+006C   0624           00182         xorwf SCRATCHNOTE,W     ;the note that is to be deleted
+006D   3080           00183         movlw b'10000000'       ;
+006E   1D03           00184         btfss STATUS,Z          ;
+006F   2???           00185         goto check              ;
+0070   0080           00186         movwf INDF              ;
+0071   03A6           00187         decf NOTESP,F           ;Must decrement the stack pointer: a note has been deleted.
+                      00188                                 ;
+0072   0600           00189 check:  xorwf INDF,W            ;See if the current stack address contains no note (W still contains 100
+                            00000 at this moment)
+0073   1D03           00190         btfss STATUS,Z          ;
+0074   2???           00191         goto delay              ;branch if the current stack address does contain a note value.
+0075   0A84           00192         incf FSR,F              ;...Otherwise start shifting stack data down.
+0076   0800           00193         movf INDF,W             ;Get data from next position up in stack
+0077   0384           00194         decf FSR,F              ;
+0078   0080           00195         movwf INDF              ;stick that data into the current stack position address
+                      00196                                 ;
+0079   0A84           00197         incf FSR,F              ;MUST also now assign the address above as No Note (%10000000)
+007A   3080           00198         movlw b'10000000'       ;
+007B   0080           00199         movwf INDF              ;
+007C   0384           00200         decf FSR,F              ;
+007D   2???           00201         goto final              ;
+                      00202 
+007E   0000           00203 delay:  nop                     ;The additional delay required depends on the path previously taken.
+007F   0000           00204         nop                     ;This subroutine MUST take 20 steps no matter which branches are taken.
+0080   0000           00205         nop                     ;
+0081   0000           00206         nop                     ;***ALL NOPs ESSENTIAL FOR CORRECT DATA SYNC***
+0082   0000           00207         nop                     ;
+0083   0000           00208         nop                     ;
+0084   0000           00209         nop                     ;
+0085   0000           00210         nop                     ;
+0086   0000           00211         nop                     ;
+                      00212 
+0087   0A84           00213 final:  incf FSR,F              ;Finally move up one in the stack for next time.
+0088   0000           00214         nop                     ;***ALL NOPs ESSENTIAL FOR CORRECT DATA SYNC***
+0089   1683 1303      00215         banksel TRISB           ;
+008B   3080           00216         movlw b'10000000'       ;All bits on either ports are outputs EXCEPT Port B, bit 7 = MIDI input.
+                             This is to
+Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
+008C   0086           00217         movwf TRISB             ;restore the port data direction registers after they were changed for c
+                            hecking the
+                      00218                                 ;current midi channel.
+008D   1283 1303      00219         banksel PORTB
+008F   0000           00220         nop                     ;
+0090   0CA0           00221         rrf BYTE,F              ; Shift BYTE, C will be set if the start bit is moved into C, indicating
+                             all bits are loaded
+0091   1806           00222         btfsc PORTB,MIDI                ;
+0092   17A0           00223         bsf BYTE,7              ; flip the new bit on BYTE
+0093   1C03           00224         btfss STATUS,C          ;
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  6
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0094   2???           00225         goto LOOP               ;
+0095   0008           00226         return                  ;
+                      00227 
+3FF8                  00228     end
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  7
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+ADCON0                            0000001F
+ADCON1                            0000009F
+ADCS0                             00000006
+ADCS1                             00000007
+ADCS2                             00000006
+ADFM                              00000007
+ADIE                              00000006
+ADIF                              00000006
+ADON                              00000000
+ADRESH                            0000001E
+ADRESL                            0000009E
+BF                                00000000
+BYTE                              00000020
+C                                 00000000
+CCP1CON                           00000017
+CCP1IE                            00000002
+CCP1IF                            00000002
+CCP1M0                            00000000
+CCP1M1                            00000001
+CCP1M2                            00000002
+CCP1M3                            00000003
+CCP1X                             00000005
+CCP1Y                             00000004
+CCPR1                             00000015
+CCPR1H                            00000016
+CCPR1L                            00000015
+CHANNEL                           00000021
+CHS0                              00000003
+CHS1                              00000004
+CHS2                              00000005
+CKE                               00000006
+CKP                               00000004
+D                                 00000005
+DATA_ADDRESS                      00000005
+DC                                00000001
+D_A                               00000005
+D_NOT_A                           00000005
+Delay                             00000020
+EEADR                             0000010D
+EEADRH                            0000010F
+EECON1                            0000018C
+EECON2                            0000018D
+EEDATA                            0000010C
+EEDATH                            0000010E
+EEIE                              00000004
+EEIF                              00000004
+EEPGD                             00000007
+F                                 00000001
+FREE                              00000004
+FSR                               00000004
+GIE                               00000007
+GO                                00000002
+GO_DONE                           00000002
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  8
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+GO_NOT_DONE                       00000002
+I2C_DATA                          00000005
+I2C_READ                          00000002
+I2C_START                         00000003
+I2C_STOP                          00000004
+INDF                              00000000
+INTCON                            0000000B
+INTE                              00000004
+INTEDG                            00000006
+INTF                              00000001
+IOFS                              00000002
+IRCF0                             00000004
+IRCF1                             00000005
+IRCF2                             00000006
+IRP                               00000007
+LASTSTATUSBYTE                    00000025
+LOOP                              0000006B
+MIDI                              00000000
+NOTESP                            00000026
+NOTESTACK                         00000027
+NOT_A                             00000005
+NOT_ADDRESS                       00000005
+NOT_BO                            00000000
+NOT_BOR                           00000000
+NOT_DONE                          00000002
+NOT_PD                            00000003
+NOT_POR                           00000001
+NOT_RBPU                          00000007
+NOT_T1SYNC                        00000002
+NOT_TO                            00000004
+NOT_W                             00000002
+NOT_WRITE                         00000002
+OPTION_REG                        00000081
+OSCCON                            0000008F
+OSCTUNE                           00000090
+P                                 00000004
+PCFG0                             00000000
+PCFG1                             00000001
+PCFG2                             00000002
+PCFG3                             00000003
+PCL                               00000002
+PCLATH                            0000000A
+PCON                              0000008E
+PEIE                              00000006
+PIE1                              0000008C
+PIE2                              0000008D
+PIR1                              0000000C
+PIR2                              0000000D
+PORTA                             00000005
+PORTB                             00000006
+PR2                               00000092
+PS0                               00000000
+PS1                               00000001
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE  9
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+PS2                               00000002
+PSA                               00000003
+R                                 00000002
+RA0                               00000000
+RA1                               00000001
+RA2                               00000002
+RA3                               00000003
+RA4                               00000004
+RA5                               00000005
+RA6                               00000006
+RA7                               00000007
+RB0                               00000000
+RB1                               00000001
+RB2                               00000002
+RB3                               00000003
+RB4                               00000004
+RB5                               00000005
+RB6                               00000006
+RB7                               00000007
+RBIE                              00000003
+RBIF                              00000000
+RD                                00000000
+READ_WRITE                        00000002
+RP0                               00000005
+RP1                               00000006
+R_NOT_W                           00000002
+R_W                               00000002
+S                                 00000003
+SCRATCHNOTE                       00000024
+SMP                               00000007
+SSPADD                            00000093
+SSPBUF                            00000013
+SSPCON                            00000014
+SSPEN                             00000005
+SSPIE                             00000003
+SSPIF                             00000003
+SSPM0                             00000000
+SSPM1                             00000001
+SSPM2                             00000002
+SSPM3                             00000003
+SSPOV                             00000006
+SSPSTAT                           00000094
+STATUS                            00000003
+T0CS                              00000005
+T0SE                              00000004
+T1CKPS0                           00000004
+T1CKPS1                           00000005
+T1CON                             00000010
+T1INSYNC                          00000002
+T1OSCEN                           00000003
+T2CKPS0                           00000000
+T2CKPS1                           00000001
+T2CON                             00000012
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE 10
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+TEMP1                             00000022
+TEMP2                             00000023
+TMR0                              00000001
+TMR0IE                            00000005
+TMR0IF                            00000002
+TMR1CS                            00000001
+TMR1H                             0000000F
+TMR1IE                            00000000
+TMR1IF                            00000000
+TMR1L                             0000000E
+TMR1ON                            00000000
+TMR2                              00000011
+TMR2IE                            00000001
+TMR2IF                            00000001
+TMR2ON                            00000002
+TOUTPS0                           00000003
+TOUTPS1                           00000004
+TOUTPS2                           00000005
+TOUTPS3                           00000006
+TRISA                             00000085
+TRISA0                            00000000
+TRISA1                            00000001
+TRISA2                            00000002
+TRISA3                            00000003
+TRISA4                            00000004
+TRISA5                            00000005
+TRISA6                            00000006
+TRISA7                            00000007
+TRISB                             00000086
+TRISB0                            00000000
+TRISB1                            00000001
+TRISB2                            00000002
+TRISB3                            00000003
+TRISB4                            00000004
+TRISB5                            00000005
+TRISB6                            00000006
+TRISB7                            00000007
+TUN0                              00000000
+TUN1                              00000001
+TUN2                              00000002
+TUN3                              00000003
+TUN4                              00000004
+TUN5                              00000005
+UA                                00000001
+W                                 00000000
+WCOL                              00000007
+WR                                00000001
+WREN                              00000002
+WRERR                             00000003
+Z                                 00000002
+_BODEN_OFF                        00003FBF
+_BODEN_ON                         00003FFF
+_BOREN_OFF                        00003FBF
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_BOREN_ON                         00003FFF
+_CCP1_RB2                         00003FFF
+_CCP1_RB3                         00002FFF
+_CCPMX_RB2                        00003FFF
+_CCPMX_RB3                        00002FFF
+_CONFIG                           00002007
+_CPD_OFF                          00003FFF
+_CPD_ON                           00003EFF
+_CP_ALL                           00001FFF
+_CP_OFF                           00003FFF
+_CP_ON                            00001FFF
+_DEBUG_OFF                        00003FFF
+_DEBUG_ON                         000037FF
+_DEVID1                           00002006
+_EXTCLK                           00003FEF
+_EXTRC_CLKOUT                     00003FFF
+_EXTRC_IO                         00003FFE
+_FOSC_EC                          00003FEF
+_FOSC_EXTRCCLK                    00003FFF
+_FOSC_EXTRCIO                     00003FFE
+_FOSC_HS                          00003FEE
+_FOSC_INTOSCCLK                   00003FFD
+_FOSC_INTOSCIO                    00003FFC
+_FOSC_LP                          00003FEC
+_FOSC_XT                          00003FED
+_HS_OSC                           00003FEE
+_IDLOC0                           00002000
+_IDLOC1                           00002001
+_IDLOC2                           00002002
+_IDLOC3                           00002003
+_INTRC_CLKOUT                     00003FFD
+_INTRC_IO                         00003FFC
+_LP_OSC                           00003FEC
+_LVP_OFF                          00003F7F
+_LVP_ON                           00003FFF
+_MAIN                             00000004
+_MCLRE_OFF                        00003FDF
+_MCLRE_ON                         00003FFF
+_MCLR_OFF                         00003FDF
+_MCLR_ON                          00003FFF
+_PWRTE_OFF                        00003FFF
+_PWRTE_ON                         00003FF7
+_STARTUP                          00000000
+_WDTE_OFF                         00003FFB
+_WDTE_ON                          00003FFF
+_WDT_OFF                          00003FFB
+_WDT_ON                           00003FFF
+_WRT_1024                         00003BFF
+_WRT_1536                         000039FF
+_WRT_512                          00003DFF
+_WRT_ENABLE_1024                  00003BFF
+_WRT_ENABLE_1536                  000039FF
+_WRT_ENABLE_512                   00003DFF
+MPASM  5.43                          MAIN.ASM   2-15-2012  12:04:22         PAGE 12
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
+_WRT_ENABLE_OFF                   00003FFF
+_WRT_OFF                          00003FFF
+_XT_OSC                           00003FED
+__16F819                          00000001
+check                             00000072
+delay                             0000007E
+final                             00000087
+getByte                           00000052
+handleRunningStatusController     00000051
+handleRunningStatusNoteOff        0000004F
+handleRunningStatusNoteOn         00000050
+processFirstByte                  0000002B
+processRunningStatus              00000033
+simple_read                       00000017
+start                             00000025
+waitForIdle                       00000052
+waitForStartBit                   00000054
+wait_for_bit_change               0000001F
+wait_for_start_bit                0000001D
+
+Errors   :     0
+Warnings :     0 reported,     0 suppressed
+Messages :     7 reported,     0 suppressed
+
+
