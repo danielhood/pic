@@ -11,7 +11,7 @@ _PSA 40B 0 ABS
 __Hintentry 10 0 CODE
 __Lintentry 4 0 CODE
 __pintentry 4 0 CODE
-_isr 28 0 CODE
+_isr 30 0 CODE
 _T0CS 40D 0 ABS
 _WREN C62 0 ABS
 _main 11 0 CODE
@@ -23,10 +23,13 @@ _IRCF0 47C 0 ABS
 _IRCF1 47D 0 ABS
 _IRCF2 47E 0 ABS
 _TRISA 85 0 ABS
+_TRISB 86 0 ABS
 _PORTA 5 0 ABS
 reset_vec 0 0 CODE
+_PORTB 6 0 ABS
 _EEADR 10D 0 ABS
 wtemp0 7E 0 ABS
+_nRBPU 40F 0 ABS
 interrupt_function 4 0 CODE
 _CARRY 18 0 ABS
 __Hconfig 2008 0 CONFIG
@@ -64,10 +67,10 @@ __Lcode 0 0 ABS
 saved_w 7E 0 ABS
 __Hinit 10 0 CODE
 __Linit 10 0 CODE
-__end_of_main 28 0 CODE
+__end_of_main 30 0 CODE
 __Htext 0 0 ABS
 __Ltext 0 0 ABS
-end_of_initialization 3D 0 CODE
+end_of_initialization 49 0 CODE
 __Hstrings 0 0 ABS
 __Lstrings 0 0 ABS
 __Hbank0 0 0 ABS
@@ -84,11 +87,11 @@ __Hclrtext 0 0 ABS
 __Lclrtext 0 0 ABS
 __Hidloc 0 0 IDLOC
 __Lidloc 0 0 IDLOC
-__end_of_isr 3D 0 CODE
+__end_of_isr 49 0 CODE
 __Hcinit 0 0 ABS
 __Lcinit 0 0 ABS
 __size_of_main 0 0 ABS
-__ptext71 28 0 CODE
+__ptext71 30 0 CODE
 __ptext72 0 0 CODE
 __Hend_init 11 0 CODE
 __Lend_init 10 0 CODE
@@ -103,13 +106,13 @@ intlevel5 0 0 CODE
 __HcstackCOMMON 0 0 ABS
 __LcstackCOMMON 0 0 ABS
 __pcstackCOMMON 70 0 COMMON
-start_initialization 3D 0 CODE
+start_initialization 49 0 CODE
 __Hmaintext 0 0 ABS
 __Lmaintext 0 0 ABS
 __pmaintext 11 0 CODE
 %segments
 reset_vec 0 1 CODE 0
-intentry 8 7D CODE 8
+intentry 8 95 CODE 8
 config 400E 400F CONFIG 400E
 cstackCOMMON 70 74 COMMON 70
 %locals
@@ -125,18 +128,22 @@ main.c
 25 1D 0 CODE
 26 20 0 CODE
 27 21 0 CODE
-28 22 0 CODE
-29 23 0 CODE
-30 24 0 CODE
-31 25 0 CODE
-33 26 0 CODE
-34 27 0 CODE
-C:\Users\dhood\AppData\Local\Temp\s1m0.
-109 3D 0 CODE
-110 3E 0 CODE
+30 25 0 CODE
+31 28 0 CODE
+32 29 0 CODE
+33 2A 0 CODE
+34 2B 0 CODE
+35 2C 0 CODE
+36 2D 0 CODE
+38 2E 0 CODE
+39 2F 0 CODE
+C:\Users\dhood\AppData\Local\Temp\s4mo.
+115 49 0 CODE
+116 4A 0 CODE
 main.c
-37 28 0 CODE
-39 2C 0 CODE
-40 2D 0 CODE
-42 32 0 CODE
-36 4 0 CODE
+42 30 0 CODE
+44 34 0 CODE
+45 35 0 CODE
+46 39 0 CODE
+48 3E 0 CODE
+41 4 0 CODE

@@ -763,6 +763,11 @@ TRISA = 0;
 PORTA = 0b01010001;
 
 
+nRBPU = 1;
+TRISB = 0;
+PORTB = 0b01010001;
+
+
 T0CS = 0;
 PSA = 0;
 PS2 = 1;
@@ -779,5 +784,6 @@ if (TMR0IF)
 {
 TMR0IF = 0;
 PORTA++;
+PORTB++;
 }
 }
