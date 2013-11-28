@@ -1,7 +1,7 @@
 
 
 HI-TECH Software PIC LITE Macro Assembler V9.82 build 9453 
-                                                                                               Wed Nov 27 23:51:23 2013
+                                                                                               Thu Nov 28 01:16:12 2013
 
 HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
      1  0000                     opt subtitle "HI-TECH Software Omniscient Code Generator (Lite mode) build 9453"
@@ -107,20 +107,20 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    100  0C61                     _WR	set	3169
    101                           	global	_WREN
    102  0C62                     _WREN	set	3170
-   103                           	file	"C:\Users\dhood\AppData\Local\Temp\s4mo."
+   103                           	file	"C:\Users\dhood\AppData\Local\Temp\s3p8."
    104                           	line	#
    105                           psect cinit,class=CODE,delta=2
    106                           global start_initialization
-   107  0049                     start_initialization:
+   107  0041                     start_initialization:
    108                           
    109                           psect cinit,class=CODE,delta=2
    110                           global end_of_initialization
    111                           
    112                           ;End of C runtime variable initialization code
    113                           
-   114  0049                     end_of_initialization:
-   115  0049  0183               clrf status
-   116  004A  2811               ljmp _main	;jump to C main() function
+   114  0041                     end_of_initialization:
+   115  0041  0183               clrf status
+   116  0042  2811               ljmp _main	;jump to C main() function
    117                           psect	cstackCOMMON,class=COMMON,space=1
    118                           global __pcstackCOMMON
    119  0070                     __pcstackCOMMON:
@@ -130,12 +130,12 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    123  0070                     ?_isr:	; 0 bytes @ 0x0
    124                           	global	??_isr
    125  0070                     ??_isr:	; 0 bytes @ 0x0
-   126  0070                     	ds	5
+   126  0070                     	ds	4
    127                           	global	??_main
-   128  0075                     ??_main:	; 0 bytes @ 0x5
+   128  0074                     ??_main:	; 0 bytes @ 0x4
    129 ;;Data sizes: Strings 0, constant 0, data 0, bss 0, persistent 0 stack 0
    130 ;;Auto spaces:   Size  Autos    Used
-   131 ;; COMMON          14      5       5
+   131 ;; COMMON          14      4       4
    132 ;; BANK0           80      0       0
    133 ;; BANK1           80      0       0
    134 ;; BANK2           80      0       0
@@ -194,8 +194,8 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    187 ;; ---------------------------------------------------------------------------------
    188 ;; (Depth) Function   	        Calls       Base Space   Used Autos Params    Refs
    189 ;; ---------------------------------------------------------------------------------
-   190 ;; (1) _isr                                                  5     5      0       0
-   191 ;;                                              0 COMMON     5     5      0
+   190 ;; (1) _isr                                                  4     4      0       0
+   191 ;;                                              0 COMMON     4     4      0
    192 ;; ---------------------------------------------------------------------------------
    193 ;; Estimated maximum stack depth 1
    194 ;; ---------------------------------------------------------------------------------
@@ -214,7 +214,7 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    207 ;;EEDATA             100      0       0       0        0.0%
    208 ;;NULL                 0      0       0       0        0.0%
    209 ;;CODE                 0      0       0       0        0.0%
-   210 ;;COMMON               E      5       5       1       35.7%
+   210 ;;COMMON               E      4       4       1       28.6%
    211 ;;BITSFR0              0      0       0       1        0.0%
    212 ;;SFR0                 0      0       0       1        0.0%
    213 ;;BITSFR1              0      0       0       2        0.0%
@@ -393,7 +393,7 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    386 ;; Return value:  Size  Location     Type
    387 ;;		None               void
    388 ;; Registers used:
-   389 ;;		wreg, status,2, status,0
+   389 ;;		None
    390 ;; Tracked objects:
    391 ;;		On entry : 0/0
    392 ;;		On exit  : 0/0
@@ -401,9 +401,9 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    394 ;; Data sizes:     COMMON   BANK0   BANK1   BANK2
    395 ;;      Params:         0       0       0       0
    396 ;;      Locals:         0       0       0       0
-   397 ;;      Temps:          5       0       0       0
-   398 ;;      Totals:         5       0       0       0
-   399 ;;Total ram usage:        5 bytes
+   397 ;;      Temps:          4       0       0       0
+   398 ;;      Totals:         4       0       0       0
+   399 ;;Total ram usage:        4 bytes
    400 ;; Hardware stack levels used:    1
    401 ;; This function calls:
    402 ;;		Nothing
@@ -415,11 +415,11 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    408                           	file	"main.c"
    409                           	line	41
    410                           	global	__size_of_isr
-   411  0019                     	__size_of_isr	equ	__end_of_isr-_isr
+   411  0011                     	__size_of_isr	equ	__end_of_isr-_isr
    412                           	
    413  0030                     _isr:	
    414                           	opt	stack 7
-   415                           ; Regs used in _isr: [wreg+status,2+status,0]
+   415                           ; Regs used in _isr: []
    416                           psect	intentry,class=CODE,delta=2
    417                           global __pintentry
    418  0004                     __pintentry:
@@ -429,15 +429,15 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    422  007E                     	saved_w	set	btemp+0
    423  0004  00FE               	movwf	saved_w
    424  0005  0E03               	swapf	status,w
-   425  0006  00F1               	movwf	(??_isr+1)
+   425  0006  00F0               	movwf	(??_isr+0)
    426  0007  0804               	movf	fsr0,w
-   427  0008  00F2               	movwf	(??_isr+2)
+   427  0008  00F1               	movwf	(??_isr+1)
    428  0009  080A               	movf	pclath,w
-   429  000A  00F3               	movwf	(??_isr+3)
+   429  000A  00F2               	movwf	(??_isr+2)
    430  000B  1283               	bcf	status, 5	;RP0=0, select bank0
    431  000C  1303               	bcf	status, 6	;RP1=0, select bank0
    432  000D  087F               	movf	btemp+1,w
-   433  000E  00F4               	movwf	(??_isr+4)
+   433  000E  00F3               	movwf	(??_isr+3)
    434  000F  2830               	ljmp	_isr
    435                           psect	text71
    436                           	line	42
@@ -448,7 +448,7 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    441  0031  2833               	goto	u1_21
    442  0032  2834               	goto	u1_20
    443  0033                     u1_21:
-   444  0033  283E               	goto	i1l453
+   444  0033  2836               	goto	i1l453
    445  0034                     u1_20:
    446                           	line	44
    447                           	
@@ -456,57 +456,43 @@ HI-TECH Software Omniscient Code Generator (Lite mode) build 9453
    449                           ;main.c: 43: {
    450                           ;main.c: 44: TMR0IF = 0;
    451  0034  110B               	bcf	(90/8),(90)&7
-   452                           	line	45
-   453                           	
-   454  0035                     i1l1312:	
-   455                           ;main.c: 45: PORTA++;
-   456  0035  3001               	movlw	(01h)
-   457  0036  00F0               	movwf	(??_isr+0)+0
-   458  0037  0870               	movf	(??_isr+0)+0,w
-   459  0038  0785               	addwf	(5),f	;volatile
-   460                           	line	46
-   461                           ;main.c: 46: PORTB++;
-   462  0039  3001               	movlw	(01h)
-   463  003A  00F0               	movwf	(??_isr+0)+0
-   464  003B  0870               	movf	(??_isr+0)+0,w
-   465  003C  0786               	addwf	(6),f	;volatile
-   466  003D  283E               	goto	i1l453
-   467                           	line	47
-   468                           	
-   469  003E                     i1l452:	
-   470                           	line	48
-   471                           	
-   472  003E                     i1l453:	
-   473  003E  0874               	movf	(??_isr+4),w
-   474  003F  00FF               	movwf	btemp+1
-   475  0040  0873               	movf	(??_isr+3),w
-   476  0041  008A               	movwf	pclath
-   477  0042  0872               	movf	(??_isr+2),w
-   478  0043  0084               	movwf	fsr0
-   479  0044  0E71               	swapf	(??_isr+1)^0FFFFFF80h,w
-   480  0045  0083               	movwf	status
-   481  0046  0EFE               	swapf	saved_w,f
-   482  0047  0E7E               	swapf	saved_w,w
-   483  0048  0009               	retfie
-   484                           	opt stack 0
-   485                           GLOBAL	__end_of_isr
-   486  0049                     	__end_of_isr:
-   487 ;; =============== function _isr ends ============
-   488                           
-   489                           	signat	_isr,88
-   490                           psect	text72,local,class=CODE,delta=2
-   491                           global __ptext72
-   492  0000                     __ptext72:
-   493                           	global	btemp
-   494  007E                     	btemp set 07Eh
-   495                           
-   496                           	DABS	1,126,2	;btemp
-   497                           	global	wtemp0
-   498  007E                     	wtemp0 set btemp
+   452  0035  2836               	goto	i1l453
+   453                           	line	47
+   454                           	
+   455  0036                     i1l452:	
+   456                           	line	48
+   457                           	
+   458  0036                     i1l453:	
+   459  0036  0873               	movf	(??_isr+3),w
+   460  0037  00FF               	movwf	btemp+1
+   461  0038  0872               	movf	(??_isr+2),w
+   462  0039  008A               	movwf	pclath
+   463  003A  0871               	movf	(??_isr+1),w
+   464  003B  0084               	movwf	fsr0
+   465  003C  0E70               	swapf	(??_isr+0)^0FFFFFF80h,w
+   466  003D  0083               	movwf	status
+   467  003E  0EFE               	swapf	saved_w,f
+   468  003F  0E7E               	swapf	saved_w,w
+   469  0040  0009               	retfie
+   470                           	opt stack 0
+   471                           GLOBAL	__end_of_isr
+   472  0041                     	__end_of_isr:
+   473 ;; =============== function _isr ends ============
+   474                           
+   475                           	signat	_isr,88
+   476                           psect	text72,local,class=CODE,delta=2
+   477                           global __ptext72
+   478  0000                     __ptext72:
+   479                           	global	btemp
+   480  007E                     	btemp set 07Eh
+   481                           
+   482                           	DABS	1,126,2	;btemp
+   483                           	global	wtemp0
+   484  007E                     	wtemp0 set btemp
 
 
 HI-TECH Software PICC Macro Assembler V9.82 build 9453 
-Symbol Table                                                                                   Wed Nov 27 23:51:23 2013
+Symbol Table                                                                                   Thu Nov 28 01:16:12 2013
 
                   _RD 0C60                    _WR 0C61                   l447 002E                   l448 002F  
                  l449 002F                   _GIE 005F                   _PS0 0408                   _PS1 0409  
@@ -518,12 +504,12 @@ Symbol Table                                                                    
                 u1_20 0034                  u1_21 0033                  _main 0011                  btemp 007E  
                 start 0010                 ??_isr 0070                 ?_main 0070                 _EEADR 010D  
                _CARRY 0018                 _IRCF0 047C                 _IRCF1 047D                 _IRCF2 047E  
-               i1l452 003E                 i1l453 003E                 _PORTA 0005                 _PORTB 0006  
+               i1l452 0036                 i1l453 0036                 _PORTA 0005                 _PORTB 0006  
                _TRISA 0085                 _TRISB 0086                 _nRBPU 040F                 pclath 000A  
-               status 0003                 wtemp0 007E          __end_of_main 0030                ??_main 0075  
+               status 0003                 wtemp0 007E          __end_of_main 0030                ??_main 0074  
               _ADCON1 009F                _EEDATA 010C                _EECON1 018C                _EECON2 018D  
-              i1l1310 0034                i1l1312 0035                i1l1308 0030                _TMR0IE 005D  
-              _TMR0IF 005A                saved_w 007E        __pcstackCOMMON 0070            __pmaintext 0011  
-          __pintentry 0004          __size_of_isr 0019  end_of_initialization 0049   start_initialization 0049  
-         __end_of_isr 0049     interrupt_function 0004              __ptext71 0030              __ptext72 0000  
-       __size_of_main 001F              intlevel1 0000  
+              i1l1310 0034                i1l1308 0030                _TMR0IE 005D                _TMR0IF 005A  
+              saved_w 007E        __pcstackCOMMON 0070            __pmaintext 0011            __pintentry 0004  
+        __size_of_isr 0011  end_of_initialization 0041   start_initialization 0041           __end_of_isr 0041  
+   interrupt_function 0004              __ptext71 0030              __ptext72 0000         __size_of_main 001F  
+            intlevel1 0000  

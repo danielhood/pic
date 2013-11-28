@@ -587,6 +587,8 @@ Version 3.2 HI-TECH Software Intermediate Code
 [v _EECON1bits `VS71  1 e@396 ]
 "843 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\include\pic16f819.h
 [v _EECON2 `Vuc  1 e@397 ]
+"13 main.c
+[v _duty `ui  1 s ]
 [p mainexit ]
 [; ;pic16f819.h: 100: volatile unsigned char INDF @ 0x000;
 [; ;pic16f819.h: 104: volatile unsigned char TMR0 @ 0x001;
@@ -1149,92 +1151,145 @@ Version 3.2 HI-TECH Software Intermediate Code
 [; ;main.c: 11: asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFFC & 0xFFFB & 0xFFF7 & 0xFFDF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF");
 [; 	psect config,class=CONFIG,delta=2 ;#
 [; 	dw 0xFFFC & 0xFFFB & 0xFFF7 & 0xFFDF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF ;#
-"13
-[v _main `(v  1 ef ]
-{
-[; ;main.c: 13: void main(void) {
-[e :U _main ]
-[f ]
-[; ;main.c: 15: IRCF0 = 1;
-"15
-[e = _IRCF0 -> -> 1 `i `b ]
-[; ;main.c: 16: IRCF1 = 1;
+[; ;main.c: 13: static unsigned int duty;
 "16
-[e = _IRCF1 -> -> 1 `i `b ]
-[; ;main.c: 17: IRCF2 = 1;
-"17
-[e = _IRCF2 -> -> 1 `i `b ]
-[; ;main.c: 20: ADCON1 = 0x06;
-"20
-[e = _ADCON1 -> -> 6 `i `uc ]
-[; ;main.c: 21: TRISA = 0;
-"21
-[e = _TRISA -> -> 0 `i `uc ]
-[; ;main.c: 22: PORTA = 0b01010001;
-"22
-[e = _PORTA -> -> 81 `i `uc ]
-[; ;main.c: 25: nRBPU = 1;
-"25
-[e = _nRBPU -> -> 1 `i `b ]
-[; ;main.c: 26: TRISB = 0;
-"26
-[e = _TRISB -> -> 0 `i `uc ]
-[; ;main.c: 27: PORTB = 0b01010001;
-"27
-[e = _PORTB -> -> 81 `i `uc ]
-[; ;main.c: 30: T0CS = 0;
-"30
-[e = _T0CS -> -> 0 `i `b ]
-[; ;main.c: 31: PSA = 0;
-"31
-[e = _PSA -> -> 0 `i `b ]
-[; ;main.c: 32: PS2 = 1;
-"32
-[e = _PS2 -> -> 1 `i `b ]
-[; ;main.c: 33: PS1 = 1;
-"33
-[e = _PS1 -> -> 1 `i `b ]
-[; ;main.c: 34: PS0 = 1;
-"34
-[e = _PS0 -> -> 1 `i `b ]
-[; ;main.c: 35: TMR0IE = 1;
-"35
-[e = _TMR0IE -> -> 1 `i `b ]
-[; ;main.c: 36: GIE = 1;
-"36
-[e = _GIE -> -> 1 `i `b ]
-[; ;main.c: 38: for(;;);
-"38
+[v _update_duty `(v  1 sf ]
 {
-[e :U 74 ]
-[e $U 74  ]
-[e :U 75 ]
-}
-[; ;main.c: 39: }
-"39
+[; ;main.c: 15: static void update_duty(void)
+[; ;main.c: 16: {
+[e :U _update_duty ]
+[f ]
+[; ;main.c: 17: CCP1Y = duty;
+"17
+[e = _CCP1Y -> _duty `b ]
+[; ;main.c: 18: duty >>= 1;
+"18
+[e =>> _duty -> 1 `i ]
+[; ;main.c: 19: CCP1X = duty;
+"19
+[e = _CCP1X -> _duty `b ]
+[; ;main.c: 20: duty >>= 1;
+"20
+[e =>> _duty -> 1 `i ]
+[; ;main.c: 21: CCPR1L = duty;
+"21
+[e = _CCPR1L -> _duty `uc ]
+[; ;main.c: 22: }
+"22
 [e :UE 73 ]
 }
-"41
-[v F727 `(v  1 tf ]
-[v _isr `IF727  1 s ]
+"24
+[v _main `(v  1 ef ]
 {
-[; ;main.c: 41: static void interrupt isr(void) {
+[; ;main.c: 24: void main(void) {
+[e :U _main ]
+[f ]
+[; ;main.c: 25: duty = 110;
+"25
+[e = _duty -> -> 110 `i `ui ]
+[; ;main.c: 27: IRCF0 = 1;
+"27
+[e = _IRCF0 -> -> 1 `i `b ]
+[; ;main.c: 28: IRCF1 = 1;
+"28
+[e = _IRCF1 -> -> 1 `i `b ]
+[; ;main.c: 29: IRCF2 = 1;
+"29
+[e = _IRCF2 -> -> 1 `i `b ]
+[; ;main.c: 32: ADCON1 = 0x06;
+"32
+[e = _ADCON1 -> -> 6 `i `uc ]
+[; ;main.c: 33: TRISA = 0;
+"33
+[e = _TRISA -> -> 0 `i `uc ]
+[; ;main.c: 34: PORTA = 0b01010001;
+"34
+[e = _PORTA -> -> 81 `i `uc ]
+[; ;main.c: 37: PR2 = 0xFF;
+"37
+[e = _PR2 -> -> 255 `i `uc ]
+[; ;main.c: 38: update_duty();
+"38
+[e ( _update_duty ..  ]
+[; ;main.c: 42: TRISB = 0;
+"42
+[e = _TRISB -> -> 0 `i `uc ]
+[; ;main.c: 43: T2CKPS1 = 0;
+"43
+[e = _T2CKPS1 -> -> 0 `i `b ]
+[; ;main.c: 44: T2CKPS0 = 0;
+"44
+[e = _T2CKPS0 -> -> 0 `i `b ]
+[; ;main.c: 45: CCP1M3 = 1;
+"45
+[e = _CCP1M3 -> -> 1 `i `b ]
+[; ;main.c: 46: CCP1M2 = 1;
+"46
+[e = _CCP1M2 -> -> 1 `i `b ]
+[; ;main.c: 49: T0CS = 0;
+"49
+[e = _T0CS -> -> 0 `i `b ]
+[; ;main.c: 50: PSA = 0;
+"50
+[e = _PSA -> -> 0 `i `b ]
+[; ;main.c: 51: PS2 = 1;
+"51
+[e = _PS2 -> -> 1 `i `b ]
+[; ;main.c: 52: PS1 = 1;
+"52
+[e = _PS1 -> -> 1 `i `b ]
+[; ;main.c: 53: PS0 = 1;
+"53
+[e = _PS0 -> -> 1 `i `b ]
+[; ;main.c: 54: TMR0IE = 1;
+"54
+[e = _TMR0IE -> -> 1 `i `b ]
+[; ;main.c: 55: GIE = 1;
+"55
+[e = _GIE -> -> 1 `i `b ]
+[; ;main.c: 57: for(;;);
+"57
+{
+[e :U 75 ]
+[e $U 75  ]
+[e :U 76 ]
+}
+[; ;main.c: 58: }
+"58
+[e :UE 74 ]
+}
+"60
+[v F730 `(v  1 tf ]
+[v _isr `IF730  1 s ]
+{
+[; ;main.c: 60: static void interrupt isr(void) {
 [e :U _isr ]
 [f ]
-[; ;main.c: 42: if (TMR0IF)
-"42
-[e $ ! _TMR0IF 78  ]
-[; ;main.c: 43: {
-"43
+[; ;main.c: 61: if (TMR0IF)
+"61
+[e $ ! _TMR0IF 79  ]
+[; ;main.c: 62: {
+"62
 {
-[; ;main.c: 44: TMR0IF = 0;
-"44
+[; ;main.c: 63: TMR0IF = 0;
+"63
 [e = _TMR0IF -> -> 0 `i `b ]
-"47
+[; ;main.c: 65: duty++;
+"65
+[e ++ _duty -> -> 1 `i `ui ]
+[; ;main.c: 66: if (duty >= 1024) duty = 0;
+"66
+[e $ ! >= _duty -> -> 1024 `i `ui 80  ]
+[e = _duty -> -> 0 `i `ui ]
+[e :U 80 ]
+[; ;main.c: 67: update_duty();
+"67
+[e ( _update_duty ..  ]
+"68
 }
-[e :U 78 ]
-[; ;main.c: 47: }
-[; ;main.c: 48: }
-"48
-[e :UE 77 ]
+[e :U 79 ]
+[; ;main.c: 68: }
+[; ;main.c: 69: }
+"69
+[e :UE 78 ]
 }

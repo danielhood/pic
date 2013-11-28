@@ -1,0 +1,5 @@
+_main: CODE, 17 0 41
+_update_duty: CODE, 96 0 37
+_isr: CODE, 58 0 38
+i1_update_duty: CODE, 133 0 37
+Total: 153

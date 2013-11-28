@@ -751,7 +751,19 @@ extern void _delay(unsigned long);
 # 11 "main.c"
 asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFFC & 0xFFFB & 0xFFF7 & 0xFFDF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF");
 
+static unsigned int duty;
+
+static void update_duty(void)
+{
+CCP1Y = duty;
+duty >>= 1;
+CCP1X = duty;
+duty >>= 1;
+CCPR1L = duty;
+}
+
 void main(void) {
+duty = 110;
 
 IRCF0 = 1;
 IRCF1 = 1;
@@ -763,9 +775,16 @@ TRISA = 0;
 PORTA = 0b01010001;
 
 
-nRBPU = 1;
+PR2 = 0xFF;
+update_duty();
+
+
+
 TRISB = 0;
-PORTB = 0b01010001;
+T2CKPS1 = 0;
+T2CKPS0 = 0;
+CCP1M3 = 1;
+CCP1M2 = 1;
 
 
 T0CS = 0;
@@ -784,6 +803,9 @@ if (TMR0IF)
 {
 TMR0IF = 0;
 
+duty++;
+if (duty >= 1024) duty = 0;
+update_duty();
+}
+}
 
-}
-}

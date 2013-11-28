@@ -15,7 +15,7 @@ Linker command line:
   -ACONFIG=02007h-02007h -pconfig=CONFIG -DCONFIG=2 -AIDLOC=02000h-02003h \
   -pidloc=IDLOC -DIDLOC=2 -AEEDATA=00h-0FFh/02100h -peeprom_data=EEDATA \
   -DEEDATA=2 -DCODE=2 -DSTRCODE=2 -DSTRING=2 -DCONST=2 -DENTRY=2 -k \
-  C:\Users\dhood\AppData\Local\Temp\s4mo.obj \
+  C:\Users\dhood\AppData\Local\Temp\s3p8.obj \
   dist/default/production\blinky.v1.0.X.production.obj 
 
 Object code version is 3.10
@@ -25,15 +25,15 @@ Machine type is 16F819
 
 
                 Name                               Link     Load   Length Selector   Space Scale
-C:\Users\dhood\AppData\Local\Temp\s4mo.obj
+C:\Users\dhood\AppData\Local\Temp\s3p8.obj
                 end_init                             10       10        1        8       0
                 reset_vec                             0        0        1        0       0
 dist/default/production\blinky.v1.0.X.production.obj
                 intentry                              4        4        C        8       0
                 config                             2007     2007        1     400E       0
-                text71                               30       30       19        8       0
-                cstackCOMMON                         70       70        5       70       1
-                cinit                                49       49        2        8       0
+                text71                               30       30       11        8       0
+                cstackCOMMON                         70       70        4       70       1
+                cinit                                41       41        2        8       0
                 maintext                             11       11       1F        8       0
 
 TOTAL           Name                               Link     Load   Length     Space
@@ -43,8 +43,8 @@ TOTAL           Name                               Link     Load   Length     Sp
                 end_init                             10       10        1         0
                 intentry                              4        4        C         0
                 reset_vec                             0        0        1         0
-                text71                               30       30       19         0
-                cinit                                49       49        2         0
+                text71                               30       30       11         0
+                cinit                                41       41        2         0
                 maintext                             11       11       1F         0
 
         CLASS   STRCODE        
@@ -65,7 +65,7 @@ TOTAL           Name                               Link     Load   Length     Sp
                 abs_s1                               7E       7E        2         1
 
         CLASS   COMMON         
-                cstackCOMMON                         70       70        5         1
+                cstackCOMMON                         70       70        4         1
 
         CLASS   SFR0           
 
@@ -89,8 +89,8 @@ TOTAL           Name                               Link     Load   Length     Sp
 SEGMENTS        Name                           Load    Length   Top    Selector   Space  Class     Delta
 
                 reset_vec                      000000  000001  000001         0       0  CODE        2
-                intentry                       000004  000047  00004B         8       0  CODE        2
-                cstackCOMMON                   000070  000005  000075        70       1  COMMON      1
+                intentry                       000004  00003F  000043         8       0  CODE        2
+                cstackCOMMON                   000070  000004  000074        70       1  COMMON      1
                 config                         002007  000001  002008      400E       0  CONFIG      2
 
 
@@ -101,13 +101,13 @@ UNUSED ADDRESS RANGES
         BANK1            00A0-00EF             50           1
         BANK2            0120-016F             50           1
         CODE             0001-0003              3           2
-                         004B-07FF            7B5
-        COMMON           0075-007D              9           1
+                         0043-07FF            7BD
+        COMMON           0074-007D              A           1
         CONST            0001-0003              3           2
-                         004B-07FF            100
+                         0043-07FF            100
         EEDATA           2100-21FF            100           2
         ENTRY            0001-0003              3           2
-                         004B-07FF            100
+                         0043-07FF            100
         IDLOC            2000-2003              4           2
         RAM              0020-006F             50           1
                          00A0-00EF             50
@@ -117,14 +117,14 @@ UNUSED ADDRESS RANGES
         SFR2             0100-011F             20           1
         SFR3             0180-01EF             70           1
         STRCODE          0001-0003              3           2
-                         004B-07FF            7B5
+                         0043-07FF            7BD
         STRING           0001-0003              3           2
-                         004B-07FF            100
+                         0043-07FF            100
 
                                   Symbol Table
 
 ??_isr                cstackCOMMON 0070
-??_main               cstackCOMMON 0075
+??_main               cstackCOMMON 0074
 ?_isr                 cstackCOMMON 0070
 ?_main                cstackCOMMON 0070
 _ADCON1               (abs)        009F
@@ -206,9 +206,9 @@ __Lsfr3               sfr3         0000
 __Lstrings            strings      0000
 __Ltext               text         0000
 __S0                  (abs)        2008
-__S1                  (abs)        0075
+__S1                  (abs)        0074
 __S2                  (abs)        0000
-__end_of_isr          text71       0049
+__end_of_isr          text71       0041
 __end_of_main         maintext     0030
 __pcstackCOMMON       cstackCOMMON 0070
 __pintentry           intentry     0004
@@ -222,7 +222,7 @@ _isr                  text71       0030
 _main                 maintext     0011
 _nRBPU                (abs)        040F
 btemp                 (abs)        007E
-end_of_initialization cinit        0049
+end_of_initialization cinit        0041
 interrupt_function    intentry     0004
 intlevel0             functab      0000
 intlevel1             functab      0000
@@ -233,5 +233,5 @@ intlevel5             functab      0000
 reset_vec             reset_vec    0000
 saved_w               (abs)        007E
 start                 init         0010
-start_initialization  cinit        0049
+start_initialization  cinit        0041
 wtemp0                (abs)        007E
