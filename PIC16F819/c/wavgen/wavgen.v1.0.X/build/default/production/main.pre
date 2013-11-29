@@ -748,22 +748,68 @@ extern void memcpyee(eeprom unsigned char *to, const unsigned char *from, unsign
 #pragma inline(_delay)
 extern void _delay(unsigned long);
 
-# 11 "main.c"
-asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFFC & 0xFFFB & 0xFFF7 & 0xFFDF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF");
+# 3 "C:\Program Files (x86)\HI-TECH Software\PICC\9.82\include\math.h"
+extern double fabs(double);
+extern double floor(double);
+extern double ceil(double);
+extern double modf(double, double *);
+extern double sqrt(double);
+extern double atof(const char *);
+extern double sin(double);
+extern double cos(double);
+extern double tan(double);
+extern double asin(double);
+extern double acos(double);
+extern double atan(double);
+extern double atan2(double, double);
+extern double log(double);
+extern double log10(double);
+extern double pow(double, double);
+extern double exp(double);
+extern double sinh(double);
+extern double cosh(double);
+extern double tanh(double);
+extern double eval_poly(double, const double *, int);
+extern double frexp(double, int *);
+extern double ldexp(double, int);
+extern double fmod(double, double);
+extern double trunc(double);
+extern double round(double);
+
+# 17 "main.c"
+asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFEE & 0xFFFB & 0xFFF7 & 0xFFFF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF");
 
 static unsigned int duty;
+static unsigned int delta;
 
-static void update_duty(void)
+static double freq = 440;
+static double sample_rate = 19531.25;
+static unsigned int duty_max = 1023;
+static unsigned int duty_max2 = 1023*16;
+
+static void update_duty(unsigned int value)
 {
-CCP1Y = duty;
-duty >>= 1;
-CCP1X = duty;
-duty >>= 1;
-CCPR1L = duty;
+
+
+CCP1Y = value;
+
+
+value >>= 1;
+CCP1X = value;
+
+
+value >>= 1;
+CCPR1L = value;
+
 }
 
 void main(void) {
-duty = 110;
+duty = duty_max2;
+
+
+
+delta = (unsigned int)round(freq/sample_rate*(duty_max2+1));
+
 
 IRCF0 = 1;
 IRCF1 = 1;
@@ -776,26 +822,50 @@ PORTA = 0b01010001;
 
 
 PR2 = 0xFF;
-update_duty();
-
-
+update_duty(duty);
 
 TRISB = 0;
 T2CKPS1 = 0;
 T2CKPS0 = 0;
 CCP1M3 = 1;
 CCP1M2 = 1;
+TMR2ON = 1;
 
 
 T0CS = 0;
-PSA = 0;
-PS2 = 1;
-PS1 = 1;
-PS0 = 1;
+
+
+
+
 TMR0IE = 1;
 GIE = 1;
 
-for(;;);
+
+for(;;)
+{
+
+
+
+}
+}
+
+static unsigned int convert_to_duty(double value)
+{
+
+
+double result = duty_max*value;
+return (unsigned int)result;
+}
+
+static void advance_wave()
+{
+
+# 109
+update_duty(duty >> 4);
+
+
+if (duty < delta) duty = duty_max2-duty;
+duty = duty - delta;
 }
 
 static void interrupt isr(void) {
@@ -803,9 +873,8 @@ if (TMR0IF)
 {
 TMR0IF = 0;
 
-duty++;
-if (duty >= 1024) duty = 0;
-update_duty();
+# 125
+advance_wave();
 }
 }
 

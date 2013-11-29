@@ -587,9 +587,21 @@ Version 3.2 HI-TECH Software Intermediate Code
 [v _EECON1bits `VS71  1 e@396 ]
 "843 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\include\pic16f819.h
 [v _EECON2 `Vuc  1 e@397 ]
-"13 main.c
+"19 main.c
 [v _duty `ui  1 s ]
+"20 main.c
+[v _delta `ui  1 s ]
+"22 main.c
+[v _freq `d  1 s ]
+"23 main.c
+[v _sample_rate `d  1 s ]
+"24 main.c
+[v _duty_max `ui  1 s ]
+"25 main.c
+[v _duty_max2 `ui  1 s ]
 [p mainexit ]
+"28 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\include\math.h
+[v _round `(d  0 ef1`d ]
 [; ;pic16f819.h: 100: volatile unsigned char INDF @ 0x000;
 [; ;pic16f819.h: 104: volatile unsigned char TMR0 @ 0x001;
 [; ;pic16f819.h: 108: volatile unsigned char PCL @ 0x002;
@@ -1147,149 +1159,231 @@ Version 3.2 HI-TECH Software Intermediate Code
 [; ;eeprom_routines.h: 43: extern void eecpymem(volatile unsigned char *to, eeprom unsigned char *from, unsigned char size);
 [; ;eeprom_routines.h: 44: extern void memcpyee(eeprom unsigned char *to, const unsigned char *from, unsigned char size);
 [; ;pic.h: 154: extern void _delay(unsigned long);
-"11 main.c
-[; ;main.c: 11: asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFFC & 0xFFFB & 0xFFF7 & 0xFFDF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF");
+[; ;math.h: 3: extern double fabs(double);
+[; ;math.h: 4: extern double floor(double);
+[; ;math.h: 5: extern double ceil(double);
+[; ;math.h: 6: extern double modf(double, double *);
+[; ;math.h: 7: extern double sqrt(double);
+[; ;math.h: 8: extern double atof(const char *);
+[; ;math.h: 9: extern double sin(double);
+[; ;math.h: 10: extern double cos(double);
+[; ;math.h: 11: extern double tan(double);
+[; ;math.h: 12: extern double asin(double);
+[; ;math.h: 13: extern double acos(double);
+[; ;math.h: 14: extern double atan(double);
+[; ;math.h: 15: extern double atan2(double, double);
+[; ;math.h: 16: extern double log(double);
+[; ;math.h: 17: extern double log10(double);
+[; ;math.h: 18: extern double pow(double, double);
+[; ;math.h: 19: extern double exp(double);
+[; ;math.h: 20: extern double sinh(double);
+[; ;math.h: 21: extern double cosh(double);
+[; ;math.h: 22: extern double tanh(double);
+[; ;math.h: 23: extern double eval_poly(double, const double *, int);
+[; ;math.h: 24: extern double frexp(double, int *);
+[; ;math.h: 25: extern double ldexp(double, int);
+[; ;math.h: 26: extern double fmod(double, double);
+[; ;math.h: 27: extern double trunc(double);
+[; ;math.h: 28: extern double round(double);
+"17 main.c
+[; ;main.c: 17: asm("\tpsect config,class=CONFIG,delta=2"); asm("\tdw ""0xFFEE & 0xFFFB & 0xFFF7 & 0xFFFF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF");
 [; 	psect config,class=CONFIG,delta=2 ;#
-[; 	dw 0xFFFC & 0xFFFB & 0xFFF7 & 0xFFDF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF ;#
-[; ;main.c: 13: static unsigned int duty;
-"16
-[v _update_duty `(v  1 sf ]
-{
-[; ;main.c: 15: static void update_duty(void)
-[; ;main.c: 16: {
-[e :U _update_duty ]
-[f ]
-[; ;main.c: 17: CCP1Y = duty;
-"17
-[e = _CCP1Y -> _duty `b ]
-[; ;main.c: 18: duty >>= 1;
-"18
-[e =>> _duty -> 1 `i ]
-[; ;main.c: 19: CCP1X = duty;
-"19
-[e = _CCP1X -> _duty `b ]
-[; ;main.c: 20: duty >>= 1;
-"20
-[e =>> _duty -> 1 `i ]
-[; ;main.c: 21: CCPR1L = duty;
-"21
-[e = _CCPR1L -> _duty `uc ]
-[; ;main.c: 22: }
+[; 	dw 0xFFEE & 0xFFFB & 0xFFF7 & 0xFFFF & 0xFFFF & 0xFF7F & 0xFFFF & 0xFFFF & 0xFFFF & 0xFFFF & 0xEFFF ;#
+[; ;main.c: 19: static unsigned int duty;
+[; ;main.c: 20: static unsigned int delta;
 "22
+[i _freq
+-> -> 440 `i `d
+]
+[; ;main.c: 22: static double freq = 440;
+"23
+[i _sample_rate
+.19531.25
+]
+[; ;main.c: 23: static double sample_rate = 19531.25;
+"24
+[i _duty_max
+-> -> 1023 `i `ui
+]
+[; ;main.c: 24: static unsigned int duty_max = 1023;
+"25
+[i _duty_max2
+-> * -> 1023 `i -> 16 `i `ui
+]
+[; ;main.c: 25: static unsigned int duty_max2 = 1023*16;
+"28
+[v _update_duty `(v  1 sf1`ui ]
+{
+[; ;main.c: 27: static void update_duty(unsigned int value)
+[; ;main.c: 28: {
+[e :U _update_duty ]
+[v _value `ui  1 r1 ]
+[f ]
+[; ;main.c: 31: CCP1Y = value;
+"31
+[e = _CCP1Y -> _value `b ]
+[; ;main.c: 34: value >>= 1;
+"34
+[e =>> _value -> 1 `i ]
+[; ;main.c: 35: CCP1X = value;
+"35
+[e = _CCP1X -> _value `b ]
+[; ;main.c: 38: value >>= 1;
+"38
+[e =>> _value -> 1 `i ]
+[; ;main.c: 39: CCPR1L = value;
+"39
+[e = _CCPR1L -> _value `uc ]
+[; ;main.c: 41: }
+"41
 [e :UE 73 ]
 }
-"24
+"43
 [v _main `(v  1 ef ]
 {
-[; ;main.c: 24: void main(void) {
+[; ;main.c: 43: void main(void) {
 [e :U _main ]
 [f ]
-[; ;main.c: 25: duty = 110;
-"25
-[e = _duty -> -> 110 `i `ui ]
-[; ;main.c: 27: IRCF0 = 1;
-"27
-[e = _IRCF0 -> -> 1 `i `b ]
-[; ;main.c: 28: IRCF1 = 1;
-"28
-[e = _IRCF1 -> -> 1 `i `b ]
-[; ;main.c: 29: IRCF2 = 1;
-"29
-[e = _IRCF2 -> -> 1 `i `b ]
-[; ;main.c: 32: ADCON1 = 0x06;
-"32
-[e = _ADCON1 -> -> 6 `i `uc ]
-[; ;main.c: 33: TRISA = 0;
-"33
-[e = _TRISA -> -> 0 `i `uc ]
-[; ;main.c: 34: PORTA = 0b01010001;
-"34
-[e = _PORTA -> -> 81 `i `uc ]
-[; ;main.c: 37: PR2 = 0xFF;
-"37
-[e = _PR2 -> -> 255 `i `uc ]
-[; ;main.c: 38: update_duty();
-"38
-[e ( _update_duty ..  ]
-[; ;main.c: 42: TRISB = 0;
-"42
-[e = _TRISB -> -> 0 `i `uc ]
-[; ;main.c: 43: T2CKPS1 = 0;
-"43
-[e = _T2CKPS1 -> -> 0 `i `b ]
-[; ;main.c: 44: T2CKPS0 = 0;
+[; ;main.c: 44: duty = duty_max2;
 "44
-[e = _T2CKPS0 -> -> 0 `i `b ]
-[; ;main.c: 45: CCP1M3 = 1;
-"45
-[e = _CCP1M3 -> -> 1 `i `b ]
-[; ;main.c: 46: CCP1M2 = 1;
-"46
-[e = _CCP1M2 -> -> 1 `i `b ]
-[; ;main.c: 49: T0CS = 0;
-"49
-[e = _T0CS -> -> 0 `i `b ]
-[; ;main.c: 50: PSA = 0;
-"50
-[e = _PSA -> -> 0 `i `b ]
-[; ;main.c: 51: PS2 = 1;
+[e = _duty _duty_max2 ]
+[; ;main.c: 48: delta = (unsigned int)round(freq/sample_rate*(duty_max2+1));
+"48
+[e = _delta -> ( _round (1 * / _freq _sample_rate -> + _duty_max2 -> -> 1 `i `ui `d `ui ]
+[; ;main.c: 51: IRCF0 = 1;
 "51
-[e = _PS2 -> -> 1 `i `b ]
-[; ;main.c: 52: PS1 = 1;
+[e = _IRCF0 -> -> 1 `i `b ]
+[; ;main.c: 52: IRCF1 = 1;
 "52
-[e = _PS1 -> -> 1 `i `b ]
-[; ;main.c: 53: PS0 = 1;
+[e = _IRCF1 -> -> 1 `i `b ]
+[; ;main.c: 53: IRCF2 = 1;
 "53
-[e = _PS0 -> -> 1 `i `b ]
-[; ;main.c: 54: TMR0IE = 1;
-"54
-[e = _TMR0IE -> -> 1 `i `b ]
-[; ;main.c: 55: GIE = 1;
-"55
-[e = _GIE -> -> 1 `i `b ]
-[; ;main.c: 57: for(;;);
+[e = _IRCF2 -> -> 1 `i `b ]
+[; ;main.c: 56: ADCON1 = 0x06;
+"56
+[e = _ADCON1 -> -> 6 `i `uc ]
+[; ;main.c: 57: TRISA = 0;
 "57
+[e = _TRISA -> -> 0 `i `uc ]
+[; ;main.c: 58: PORTA = 0b01010001;
+"58
+[e = _PORTA -> -> 81 `i `uc ]
+[; ;main.c: 61: PR2 = 0xFF;
+"61
+[e = _PR2 -> -> 255 `i `uc ]
+[; ;main.c: 62: update_duty(duty);
+"62
+[e ( _update_duty (1 _duty ]
+[; ;main.c: 64: TRISB = 0;
+"64
+[e = _TRISB -> -> 0 `i `uc ]
+[; ;main.c: 65: T2CKPS1 = 0;
+"65
+[e = _T2CKPS1 -> -> 0 `i `b ]
+[; ;main.c: 66: T2CKPS0 = 0;
+"66
+[e = _T2CKPS0 -> -> 0 `i `b ]
+[; ;main.c: 67: CCP1M3 = 1;
+"67
+[e = _CCP1M3 -> -> 1 `i `b ]
+[; ;main.c: 68: CCP1M2 = 1;
+"68
+[e = _CCP1M2 -> -> 1 `i `b ]
+[; ;main.c: 69: TMR2ON = 1;
+"69
+[e = _TMR2ON -> -> 1 `i `b ]
+[; ;main.c: 72: T0CS = 0;
+"72
+[e = _T0CS -> -> 0 `i `b ]
+[; ;main.c: 77: TMR0IE = 1;
+"77
+[e = _TMR0IE -> -> 1 `i `b ]
+[; ;main.c: 78: GIE = 1;
+"78
+[e = _GIE -> -> 1 `i `b ]
+[; ;main.c: 81: for(;;)
+"81
 {
+"82
 [e :U 75 ]
+[; ;main.c: 82: {
+{
+"86
+}
+[; ;main.c: 86: }
 [e $U 75  ]
 [e :U 76 ]
 }
-[; ;main.c: 58: }
-"58
+[; ;main.c: 87: }
+"87
 [e :UE 74 ]
 }
-"60
-[v F730 `(v  1 tf ]
-[v _isr `IF730  1 s ]
+"90
+[v _convert_to_duty `(ui  1 sf1`d ]
 {
-[; ;main.c: 60: static void interrupt isr(void) {
+[; ;main.c: 89: static unsigned int convert_to_duty(double value)
+[; ;main.c: 90: {
+[e :U _convert_to_duty ]
+[v _value `d  1 r1 ]
+[f ]
+"93
+[v _result `d  1 a ]
+[; ;main.c: 93: double result = duty_max*value;
+[e = _result * -> _duty_max `d _value ]
+[; ;main.c: 94: return (unsigned int)result;
+"94
+[e ) -> _result `ui ]
+[e $UE 78  ]
+[; ;main.c: 95: }
+"95
+[e :UE 78 ]
+}
+"98
+[v _advance_wave `(v  1 sf ]
+{
+[; ;main.c: 97: static void advance_wave()
+[; ;main.c: 98: {
+[e :U _advance_wave ]
+[f ]
+[; ;main.c: 109: update_duty(duty >> 4);
+"109
+[e ( _update_duty (1 >> _duty -> 4 `i ]
+[; ;main.c: 112: if (duty < delta) duty = duty_max2-duty;
+"112
+[e $ ! < _duty _delta 80  ]
+[e = _duty - _duty_max2 _duty ]
+[e :U 80 ]
+[; ;main.c: 113: duty = duty - delta;
+"113
+[e = _duty - _duty _delta ]
+[; ;main.c: 114: }
+"114
+[e :UE 79 ]
+}
+"116
+[v F801 `(v  1 tf ]
+[v _isr `IF801  1 s ]
+{
+[; ;main.c: 116: static void interrupt isr(void) {
 [e :U _isr ]
 [f ]
-[; ;main.c: 61: if (TMR0IF)
-"61
-[e $ ! _TMR0IF 79  ]
-[; ;main.c: 62: {
-"62
+[; ;main.c: 117: if (TMR0IF)
+"117
+[e $ ! _TMR0IF 82  ]
+[; ;main.c: 118: {
+"118
 {
-[; ;main.c: 63: TMR0IF = 0;
-"63
+[; ;main.c: 119: TMR0IF = 0;
+"119
 [e = _TMR0IF -> -> 0 `i `b ]
-[; ;main.c: 65: duty++;
-"65
-[e ++ _duty -> -> 1 `i `ui ]
-[; ;main.c: 66: if (duty >= 1024) duty = 0;
-"66
-[e $ ! >= _duty -> -> 1024 `i `ui 80  ]
-[e = _duty -> -> 0 `i `ui ]
-[e :U 80 ]
-[; ;main.c: 67: update_duty();
-"67
-[e ( _update_duty ..  ]
-"68
+[; ;main.c: 125: advance_wave();
+"125
+[e ( _advance_wave ..  ]
+"126
 }
-[e :U 79 ]
-[; ;main.c: 68: }
-[; ;main.c: 69: }
-"69
-[e :UE 78 ]
+[e :U 82 ]
+[; ;main.c: 126: }
+[; ;main.c: 127: }
+"127
+[e :UE 81 ]
 }

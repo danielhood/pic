@@ -1,4 +1,5 @@
 /*
+ * Project: wavgen
  * File:   main.c
  * Author: dhood
  *
@@ -6,23 +7,46 @@
  */
 
 #include <htc.h>
+#include <math.h>
 
 //config bits that are part-specific for the PIC16F819
-__CONFIG(FOSC_INTOSCIO & WDTE_OFF & PWRTE_ON & MCLRE_OFF & BOREN_ON & LVP_OFF & CPD_OFF & CP_OFF & WRT_OFF & DEBUG_OFF & CCPMX_RB3);
+// Note: Setting MCLRE_ON seems to prevent the UP00B Programmer from failing after a few ICSP flashes
+//__CONFIG(FOSC_INTOSCIO & WDTE_OFF & PWRTE_ON & MCLRE_ON & BOREN_ON & LVP_OFF & CPD_OFF & CP_OFF & WRT_OFF & DEBUG_OFF & CCPMX_RB3);
+
+// Using a 20Mhz xtal
+__CONFIG(FOSC_HS & WDTE_OFF & PWRTE_ON & MCLRE_ON & BOREN_ON & LVP_OFF & CPD_OFF & CP_OFF & WRT_OFF & DEBUG_OFF & CCPMX_RB3);
 
 static unsigned int duty;
+static unsigned int delta;
 
-static void update_duty(void)
+static double freq = 440;
+static double sample_rate = 19531.25;
+static unsigned int duty_max = 1023;
+static unsigned int duty_max2 = 1023*16;
+
+static void update_duty(unsigned int value)
 {
-    CCP1Y = duty;
-    duty >>= 1;
-    CCP1X = duty;
-    duty >>= 1;
-    CCPR1L = duty;
+    //value = value >= 512?1023:0; // Convert to square wave
+    
+    CCP1Y = value;
+    //RA0 = value;
+
+    value >>= 1;
+    CCP1X = value;
+    //RA1 = value;
+
+    value >>= 1;
+    CCPR1L = value;
+    //PORTA = value;
 }
 
 void main(void) {
-    duty = 110;
+    duty = duty_max2;
+
+    // Calculate sample delta given a 19.53kHz sample rate based on the max capacity of TMR0 running under a 20Mhz clock (20Mhz / 4 / 256)
+    //delta = 23; // 23 = delta for a 440 Hz saw wave in a domain of [0..1023]
+    delta = (unsigned int)round(freq/sample_rate*(duty_max2+1));
+
     // Set internal osc freq to 8MHz
     IRCF0 = 1;
     IRCF1 = 1;
@@ -35,26 +59,58 @@ void main(void) {
 
     // PWM Mode on RB3
     PR2 = 0xFF;     // Maximum PWM period
-    update_duty();
-    //CCPR1L = 0x00;  // Initial duty of 0
-    //CCP1Y = 0;
-    //CCP1X = 0;
+    update_duty(duty);  // Set inital PWM duty cycle
+
     TRISB = 0;      // Port B outputs
     T2CKPS1 = 0;    // Prescalre of 1
     T2CKPS0 = 0;
     CCP1M3 = 1;     // Enable PWM Mode
     CCP1M2 = 1;
+    TMR2ON = 1;     // Enable Timer2 for PWM
 
     // Setup timer0
     T0CS = 0;   // Timer mode
-    PSA = 0;    // Prescaler for Timer0
-    PS2 = 1;    // 1:256 (so we can see something)
-    PS1 = 1;
-    PS0 = 1;
+    //PSA = 1;    // Prescaler for WDT
+    //PS2 = 0;    // 1:2 (as low as we can go
+    //PS1 = 0;    //  Produces a 9,765.625 Hz interupt
+    //PS0 = 0;
     TMR0IE = 1; // Enable interrupt
     GIE = 1;    // Enable global interrupts
 
-    for(;;);
+            
+    for(;;)
+    {
+        //if (freq<40) freq=880;
+        //freq = freq - 0.05;
+        //delta = (unsigned int)round(freq/sample_rate*(duty_max2+1));
+    }
+}
+
+static unsigned int convert_to_duty(double value)
+{
+    // Value is expected to be between 1 and 0 inclusive
+
+    double result = duty_max*value;
+    return (unsigned int)result;
+}
+
+static void advance_wave()
+{
+    //update_duty(convert_to_duty(curr_sample));
+    //double delta = freq/sample_rate;
+    //curr_sample = curr_sample - delta; // saw wave
+
+    //if (curr_sample < 0) {
+    //    curr_sample = 1+curr_sample;
+        //freq = freq - 1;    // Pitch down
+        //if (freq < 200) freq = 2000;
+    //}
+
+    update_duty(duty >> 4);                  // Set the last calcualted sample right away
+
+    // Use integer math as we don't have the cycles for float
+    if (duty < delta) duty = duty_max2-duty;    // constrain wave to the 10-bit resolution
+    duty = duty - delta;
 }
 
 static void interrupt isr(void) {
@@ -62,9 +118,11 @@ static void interrupt isr(void) {
     {
         TMR0IF = 0; // Clear interrupt
         //PORTA++;
-        duty++;
-        if (duty >= 1024) duty = 0;
-        update_duty();
+
+        //update_duty(--duty);
+        //if (duty == 0) duty = 1024;
+
+        advance_wave();
     }
 }
 

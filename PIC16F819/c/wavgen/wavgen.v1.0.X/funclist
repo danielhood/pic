@@ -1,5 +1,17 @@
-_main: CODE, 17 0 41
-_update_duty: CODE, 96 0 37
-_isr: CODE, 58 0 38
-i1_update_duty: CODE, 133 0 37
-Total: 153
+___ftneg: CODE, 1672 0 14
+_advance_wave: CODE, 1468 0 61
+___ftpack: CODE, 935 0 125
+_trunc: CODE, 1327 0 71
+_main: CODE, 1060 0 115
+___lwtoft: CODE, 1629 0 23
+_round: CODE, 1175 0 79
+___ftadd: CODE, 17 0 322
+_update_duty: CODE, 1529 0 39
+_frexp: CODE, 1398 0 70
+_isr: CODE, 1652 0 20
+___ftmul: CODE, 339 0 234
+i1_update_duty: CODE, 1568 0 37
+___altoft: CODE, 1254 0 73
+___fttol: CODE, 769 0 166
+___ftdiv: CODE, 573 0 196
+Total: 1645

@@ -308,8 +308,15 @@
 `uc 1 EEPGD 1 0 :1:7 
 ]
 [u S813 . 1 `S805 1 . 1 0 ]
-"60 main.c
-[v F730 `(v  1 t 0 ]
+"116 main.c
+[v F801 `(v  1 t 0 ]
+"25 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\trunc.c
+[s S1106 flt 3 `[1]uc 1 mant 1 0 `uc 1 hmant 1 1 :7:0 
+`uc 1 lexp 1 1 :1:7 
+`uc 1 hexp 1 2 :7:0 
+`uc 1 sign 1 2 :1:7 
+]
+[u S1112 both 3 `S1106 1 flt 3 0 `d 1 fl 3 0 ]
 "5 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\abdiv.c
 [v ___abdiv `(c  1 e 1 0 ]
 "5 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\abmod.c
@@ -338,6 +345,10 @@
 [v ___bmul `(uc  1 e 1 0 ]
 "63 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\float.c
 [v ___ftpack `(f  1 e 3 0 ]
+"255 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\frexp.c
+[v _frexp `(d  1 e 3 0 ]
+"278
+[v _ldexp `(d  1 e 3 0 ]
 "87 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\ftadd.c
 [v ___ftadd `(f  1 e 3 0 ]
 "50 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\ftdiv.c
@@ -378,8 +389,12 @@
 [v ___lwmod `(ui  1 e 2 0 ]
 "29 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\lwtoft.c
 [v ___lwtoft `(f  1 e 3 0 ]
+"7 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\round.c
+[v _round `(d  1 e 3 0 ]
 "3 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\tmul.c
 [v ___tmul `(um  1 e 3 0 ]
+"14 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\trunc.c
+[v _trunc `(d  1 e 3 0 ]
 "3 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\wmul.c
 [v ___wmul `(ui  1 e 2 0 ]
 "7 eeprom.c
@@ -410,13 +425,17 @@
 [v ___fttoee `(f  1 e 3 0 ]
 "132
 [v ___fltoee `(d  1 e 3 0 ]
-"16 main.c
+"28 main.c
 [v _update_duty `(v  1 s 0 update_duty ]
 [v i1_update_duty `(v  1 s 0 i1_update_duty ]
 [v i1_update_duty `(v  1 s 0 i1_update_duty ]
-"24
+"43
 [v _main `(v  1 e 0 0 ]
-"60
+"90
+[v _convert_to_duty `(ui  1 s 2 convert_to_duty ]
+"98
+[v _advance_wave `(v  1 s 0 advance_wave ]
+"116
 [v _isr `I(v  1 s 0 isr ]
 "100 /hitech/products/compilers/pic/pro/9.82/dist/linux/include/pic16f819.h
 [v _INDF `VEuc  1 e 1 @0 ]
@@ -862,25 +881,153 @@
 [v _EEADRHbits `VES793  1 e 1 @271 ]
 "839
 [v _EECON1bits `VES813  1 e 1 @396 ]
-"13 main.c
+"3 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\errno.c
+[v _errno `i  1 e 2 0 ]
+"19 main.c
 [v _duty `ui  1 s 2 duty ]
+"20
+[v _delta `ui  1 s 2 delta ]
+"22
+[v _freq `d  1 s 3 freq ]
+"23
+[v _sample_rate `d  1 s 3 sample_rate ]
 "24
+[v _duty_max `ui  1 s 2 duty_max ]
+"25
+[v _duty_max2 `ui  1 s 2 duty_max2 ]
+"43
 [v _main `(v  1 e 0 0 ]
 {
-"58
+"87
 } 0
+"7 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\round.c
+[v _round `(d  1 e 3 0 ]
+{
+"8
+[v round@f `d  1 a 3 58 ]
+"7
+[v round@x `d  1 p 3 55 ]
+"13
+} 0
+"14 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\trunc.c
+[v _trunc `(d  1 e 3 0 ]
+{
+"15
+[v trunc@i `d  1 a 3 50 ]
 "16
+[v trunc@expon `i  1 a 2 53 ]
+"14
+[v trunc@x `d  1 p 3 46 ]
+"25
+} 0
+"43 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\altoft.c
+[v ___altoft `(f  1 e 3 0 ]
+{
+"44
+[v ___altoft@sign `uc  1 a 1 32 ]
+[v ___altoft@exp `uc  1 a 1 31 ]
+"43
+[v ___altoft@c `l  1 p 4 25 ]
+"57
+} 0
+"29 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\lwtoft.c
+[v ___lwtoft `(f  1 e 3 0 ]
+{
+[v ___lwtoft@c `ui  1 p 2 22 ]
+"31
+} 0
+"52 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\ftmul.c
+[v ___ftmul `(f  1 e 3 0 ]
+{
+"54
+[v ___ftmul@f3_as_product `um  1 a 3 49 ]
+"53
+[v ___ftmul@sign `uc  1 a 1 53 ]
+[v ___ftmul@cntr `uc  1 a 1 52 ]
+[v ___ftmul@exp `uc  1 a 1 48 ]
+"52
+[v ___ftmul@f1 `f  1 p 3 38 ]
+[v ___ftmul@f2 `f  1 p 3 41 ]
+"84
+} 0
+"50 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\ftdiv.c
+[v ___ftdiv `(f  1 e 3 0 ]
+{
+"52
+[v ___ftdiv@f3 `f  1 a 3 33 ]
+"51
+[v ___ftdiv@sign `uc  1 a 1 37 ]
+[v ___ftdiv@exp `uc  1 a 1 36 ]
+[v ___ftdiv@cntr `uc  1 a 1 32 ]
+"50
+[v ___ftdiv@f2 `f  1 p 3 22 ]
+[v ___ftdiv@f1 `f  1 p 3 25 ]
+"78
+} 0
+"87 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\ftadd.c
+[v ___ftadd `(f  1 e 3 0 ]
+{
+"88
+[v ___ftadd@exp1 `uc  1 a 1 45 ]
+[v ___ftadd@exp2 `uc  1 a 1 44 ]
+[v ___ftadd@sign `uc  1 a 1 43 ]
+"87
+[v ___ftadd@f1 `f  1 p 3 33 ]
+[v ___ftadd@f2 `f  1 p 3 36 ]
+"148
+} 0
+"16 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\ftneg.c
+[v ___ftneg `(f  1 e 3 0 ]
+{
+[v ___ftneg@f1 `f  1 p 3 22 ]
+"20
+} 0
+"45 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\fttol.c
+[v ___fttol `(l  1 e 4 0 ]
+{
+"47
+[v ___fttol@lval `ul  1 a 4 17 ]
+"46
+[v ___fttol@exp1 `uc  1 a 1 21 ]
+[v ___fttol@sign1 `uc  1 a 1 16 ]
+"45
+[v ___fttol@f1 `f  1 p 3 8 ]
+"73
+} 0
+"63 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\float.c
+[v ___ftpack `(f  1 e 3 0 ]
+{
+[v ___ftpack@arg `um  1 p 3 0 ]
+[v ___ftpack@exp `uc  1 p 1 3 ]
+[v ___ftpack@sign `uc  1 p 1 4 ]
+"86
+} 0
+"255 C:\Program Files (x86)\HI-TECH Software\PICC\9.82\sources\frexp.c
+[v _frexp `(d  1 e 3 0 ]
+{
+[v frexp@value `d  1 p 3 0 ]
+[v frexp@eptr `*.0i  1 p 1 3 ]
+"274
+} 0
+"28 main.c
 [v _update_duty `(v  1 s 0 update_duty ]
 {
-"22
+[v update_duty@value `ui  1 p 2 0 ]
+"41
 } 0
-"60
+"116
 [v _isr `I(v  1 s 0 isr ]
 {
-"69
+"127
 } 0
-"16
+"98
+[v _advance_wave `(v  1 s 0 advance_wave ]
+{
+"114
+} 0
+"28
 [v i1_update_duty `(v  1 s 0 i1_update_duty ]
 {
-"22
+[v i1update_duty@value `ui  1 p 2 0 ]
+"41
 } 0

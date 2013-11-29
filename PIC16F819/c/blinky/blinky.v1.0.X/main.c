@@ -1,4 +1,5 @@
 /*
+ * Project: blinky
  * File:   main.c
  * Author: dhood
  *
@@ -19,12 +20,12 @@ void main(void) {
     // PortA Config (all digital outs)
     ADCON1 = 0x06;  // All pins digital I/O
     TRISA = 0;      // All pins as output
-    PORTA = 0b01010001; // Initial value
+    PORTA = 0b01010011; // Initial value
 
     // PortB Config (all digital outs)
     nRBPU = 1;      // Disable weak pullups
     TRISB = 0;      // All digital outs
-    PORTB = 0b01010001; // Initial value
+    PORTB = 0b01010011; // Initial value
 
     // Setup timer0
     T0CS = 0;   // Timer mode
@@ -42,7 +43,7 @@ static void interrupt isr(void) {
     if (TMR0IF)
     {
         TMR0IF = 0; // Clear interrupt
-        //PORTA++;
+        PORTA++;
         //PORTB++;
     }
 }
