@@ -24,6 +24,7 @@
 	CNT2
 	CNT3
 	CURVAL
+	SAMPDONE
 	endc
 
 
@@ -56,13 +57,14 @@ _CHECK_TMR0:
 _CHECK_INT:
 	btfsc	INTCON,INTF	; Check for INT/RB0 interrupt
 	goto	_HANDLE_INT
+_CHECK_ADI:
+	btfsc	PIR1,ADIF
+	goto	_HANDLE_ADI
 
 _UNHANDLED:
 
 _EXIT_SERVICE:
-	bcf	INTCON,INTF	; clear the INT interrupt
 	;bcf	INTCON,TMR0IF	; clear the TMR0 interrupt
-
 	call	_RESTORE_CONTEXT
 	retfie			; Service return
 
@@ -74,8 +76,17 @@ _HANDLE_INT:
 	; Reset to 64
 	movlw	0x40
 	movwf	CURVAL
+	bcf	INTCON,INTF	; clear the INT interrupt
 	goto	_EXIT_SERVICE
 
+_HANDLE_ADI:
+	banksel ADRESH		; Copy current AD conversion to CURVAL
+	movfw	ADRESH
+
+	banksel CURVAL
+	movwf	CURVAL
+	bcf	PIR1,ADIF	; clear ADI
+	goto	_EXIT_SERVICE
 
 ; ------------------------------------------------------------------------------
 ; Context SAVE/RESTORE routines
@@ -120,16 +131,19 @@ _SETUP:
 	movwf	TRISB
 
 ; Configure interrupts
+	banksel	PIE1
+	bsf	PIE1,ADIE	; Enale ad conversion interrupt
 	banksel	INTCON
-	bcf	INTCON,GIE	; Enable interrupts globally
-	bsf	INTCON,INTE	; Enable external int on RB0
+	bcf	INTCON,INTE	; DIS-Enable external int on RB0
+	bsf	INTCON,PEIE	; Enable periferial interrups for ADI
+	bsf	INTCON,GIE	; Enable interrupts globally
+
+	bcf	PIR1,ADIF	; clear ADI
 
 ; Configure External interrupt
 	banksel	OPTION_REG
 	movlw	0xC0		; Rising edge
 	movwf	OPTION_REG
-
-
 
 ; Init and Clear PORTA and PORTB
 	banksel	PORTA
@@ -144,6 +158,22 @@ _SETUP:
 	; Init to 64 steps
 	movlw	0x40
 	movwf	CURVAL
+
+	clrf	CURVAL
+	clrf	SAMPDONE
+	bsf	SAMPDONE,0	; Trigger sampling on start
+
+
+
+;Setup AD Conversion on A0 for now
+	banksel	ADCON0
+	movlw	0x81	; AD Enabled on A0, 32Tosc clock
+	movwf	ADCON0
+
+	banksel	ADCON1
+	movlw	0x00	; left justify since we're only going to read ADRESH for now
+	movwf	ADCON1
+
 	return
 
 ; -------
@@ -154,6 +184,14 @@ _RB4_CLR:
 	bcf	PORTB,4
 	;goto	_INIT_CNT1
 	goto	_UPDATE_RB4
+
+_START_SAMPLE:
+	banksel	ADCON0
+	bsf	ADCON0,2	; Start Sampling
+			; End will be handled by interrupt
+	banksel	SAMPDONE
+	clrf	SAMPDONE
+	goto	_INIT_CNT1
 
 
 ; ------------------------------------------------------------------------------
@@ -166,22 +204,40 @@ _RB4_CLR:
 _MAIN:
 
 
+_LOOP:
+
 _UPDATE_RB4:
 	nop
 	;btfss	CURVAL,0
 	;goto	_RB4_CLR
 	;bsf	PORTB,4
 
-	movfw	CURVAL
+	banksel CURVAL
+	movfw	CURVAL		; Push CURVAL to PORTB
+	banksel PORTB
 	movwf	PORTB
 
-	goto _UPDATE_RB4
+	;goto _UPDATE_RB4
 
-_LOOP:
-	banksel	PORTB		; Toggle RB4
-	btfsc	PORTB,4
-	goto	_RB4_CLR
-	bsf	PORTB,4
+	;banksel	PORTB		; Toggle RB4
+	;btfsc	PORTB,4
+	;goto	_RB4_CLR
+	;bsf	PORTB,4
+
+_CHECK_SAMPLE:
+	btfsc	SAMPDONE,0
+	goto	_START_SAMPLE
+	btfsc	ADCON0,2
+	goto	_INIT_CNT1
+	bsf	SAMPDONE,0	; Signal that sampling is done so that next loop we can restart sampling
+
+	;banksel ADRESH		; Copy current AD conversion to CURVAL
+	;movfw	ADRESH
+
+	;banksel	CURVAL
+	;movlw	0xff
+	;movwf	CURVAL
+
 
 _INIT_CNT1:
 	banksel	CNT1		
@@ -191,7 +247,7 @@ _INIT_CNT1:
 _CNT1:	
 	decfsz	CNT1,F
 	goto	_INIT_CNT2
-	goto	_END;
+	goto	_END
 
 _INIT_CNT2:
 	banksel	CNT2
