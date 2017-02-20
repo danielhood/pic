@@ -121,7 +121,7 @@ _SETUP:
 
 ; Configure interrupts
 	banksel	INTCON
-	bsf	INTCON,GIE	; Enable interrupts globally
+	bcf	INTCON,GIE	; DISEnable interrupts globally
 
 ; Init and Clear PORTA
 	banksel	PORTA
@@ -137,6 +137,15 @@ _SETUP:
 	movwf	CURVAL
 	return
 
+; -------
+; Subs
+;
+
+_RB4_CLR:
+	bcf	PORTB,4
+	goto	_INIT_CNT1
+
+
 ; ------------------------------------------------------------------------------
 ; Main code loop
 ;
@@ -145,41 +154,51 @@ _SETUP:
 ;
 
 _MAIN:
-	banksel	PORTA
+	banksel	CURVAL
 	;comf	PORTA,F
 	clrf	CURVAL
 
 _LOOP:
-	; Update RB4
-	banksel	PORTB
+	banksel	PORTB		; Toggle RB4
 	btfsc	PORTB,4
 	goto	_RB4_CLR
-	goto	_RB4_SET
-_RB4_CLR:
-	bcf	PORTB,4
-	goto	_INIT_CNT
-_RB4_SET:
 	bsf	PORTB,4
 
-_INIT_CNT:
-	; Load counters
-	banksel	CNT1
-	movlw	0xFF
+_INIT_CNT1:
+	banksel	CNT1		
+	movlw	0xFF		; Load counter
 	movwf	CNT1
-	movwf	CNT2
-	movwf	CNT3
 	
 _CNT1:	
 	decfsz	CNT1,F
-	goto	_CNT1
-	
+	goto	_INIT_CNT2
+	goto	_END;
+
+_INIT_CNT2:
+	banksel	CNT2
+	movlw	0xFF		; Load counter
+	movwf	CNT2
+
 _CNT2:
 	decfsz	CNT2,F
-	goto	_CNT2
+	goto	_INIT_CNT3
+	goto	_CNT1
+
+_INIT_CNT3:
+	banksel	CNT3
+	movlw	0x0F		; Load counter
+	movwf	CNT3
 
 _CNT3:
 	decfsz	CNT3,F
-	goto _CNT3
+	goto	_CNT3
+	goto	_CNT2
 
+_END:
+	;bcf	PORTB,4
 	goto	_LOOP
+
+_ENDLESSLOOP:
+	nop
+	goto	_ENDLESSLOOP
 	end

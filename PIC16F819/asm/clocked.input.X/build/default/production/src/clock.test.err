@@ -1,6 +1,0 @@
-Message[302] SRC\CLOCK.TEST.ASM 94 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCK.TEST.ASM 95 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCK.TEST.ASM 96 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCK.TEST.ASM 100 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCK.TEST.ASM 103 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCK.TEST.ASM 106 : Register in operand not in bank 0.  Ensure that bank bits are correct.

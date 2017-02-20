@@ -3,7 +3,7 @@
     <type>com.microchip.mplab.nbide.embedded.makeproject</type>
     <configuration>
         <data xmlns="http://www.netbeans.org/ns/make-project/1">
-            <name>clock.test</name>
+            <name>clocked.input</name>
             <creation-uuid>fdbdd705-d61f-435d-b51d-373c31b9ed43</creation-uuid>
             <make-project-type>0</make-project-type>
             <c-extensions/>

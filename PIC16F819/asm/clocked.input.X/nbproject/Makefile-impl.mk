@@ -24,7 +24,7 @@ CLEAN_SUBPROJECTS=${CLEAN_SUBPROJECTS_${SUBPROJECTS}}
 
 
 # Project Name
-PROJECTNAME=clock.test.X
+PROJECTNAME=clocked.input.X
 
 # Active Configuration
 DEFAULTCONF=default

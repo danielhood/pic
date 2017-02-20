@@ -1,4 +1,4 @@
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  1
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -40,185 +40,213 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
   00000022            00023         CNT1
   00000023            00024         CNT2
   00000024            00025         CNT3
-                      00026         endc
-                      00027 
+  00000025            00026         CURVAL
+                      00027         endc
                       00028 
-                      00029 ; ------------------------------------------------------------------------------
-                      00030 ; Main entry and RESET vector
-                      00031 ;
-                      00032         org     0x0000
-0000   2???           00033         call    _SETUP          ; Init hardware
-0001   2???           00034         goto    _MAIN           ; Jump to main code defined in Example.asm
-                      00035 
+                      00029 
+                      00030 ; ------------------------------------------------------------------------------
+                      00031 ; Main entry and RESET vector
+                      00032 ;
+                      00033         org     0x0000
+0000   2???           00034         call    _SETUP          ; Init hardware
+0001   2???           00035         goto    _MAIN           ; Jump to main code defined in Example.asm
                       00036 
-                      00037 ; ------------------------------------------------------------------------------
-                      00038 ; Interrupt vector
-                      00039 ;
-                      00040         org     0x0004
-0004   2???           00041         goto    _SERVICE        ; Points to interrupt service routine
-                      00042 
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  2
+                      00037 
+                      00038 ; ------------------------------------------------------------------------------
+                      00039 ; Interrupt vector
+                      00040 ;
+                      00041         org     0x0004
+0004   2???           00042         goto    _SERVICE        ; Points to interrupt service routine
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
                       00043 
-                      00044 ; ------------------------------------------------------------------------------
-                      00045 ; Dispatcher for interrupt handlers
-                      00046 ;
-0005                  00047 _SERVICE:
-0005   1283 1303      00048         banksel PORTA
-0007   2???           00049         call    _SAVE_CONTEXT
-                      00050 
-                      00051         ; Assumes only one interrupt will be enabled at a time
-0008                  00052 _CHECK_TMR0:
-                      00053         ;btfsc  INTCON,TMR0IF   ; Check for Timer0 interrupt
-                      00054         ;goto   _HANDLE_TMR0
-0008                  00055 _CHECK_INT:
-                      00056         ;btfsc  INTCON,INTF     ; Check for INT/RB0 interrupt
-                      00057         ;goto   _HANDLE_INT
-                      00058 
-0008                  00059 _UNHANDLED:
-                      00060 
-0008                  00061 _EXIT_SERVICE:
-                      00062         ;bcf    INTCON,INTF     ; clear the INT interrupt
-                      00063         ;bcf    INTCON,TMR0IF   ; clear the TMR0 interrupt
-                      00064 
-0008   2???           00065         call    _RESTORE_CONTEXT
-0009   0009           00066         retfie                  ; Service return
-                      00067 
+                      00044 
+                      00045 ; ------------------------------------------------------------------------------
+                      00046 ; Dispatcher for interrupt handlers
+                      00047 ;
+0005                  00048 _SERVICE:
+0005   1283 1303      00049         banksel PORTA
+0007   2???           00050         call    _SAVE_CONTEXT
+                      00051 
+                      00052         ; Assumes only one interrupt will be enabled at a time
+0008                  00053 _CHECK_TMR0:
+                      00054         ;btfsc  INTCON,TMR0IF   ; Check for Timer0 interrupt
+                      00055         ;goto   _HANDLE_TMR0
+0008                  00056 _CHECK_INT:
+0008   188B           00057         btfsc   INTCON,INTF     ; Check for INT/RB0 interrupt
+0009   2???           00058         goto    _HANDLE_INT
+                      00059 
+000A                  00060 _UNHANDLED:
+                      00061 
+000A                  00062 _EXIT_SERVICE:
+000A   108B           00063         bcf     INTCON,INTF     ; clear the INT interrupt
+                      00064         ;bcf    INTCON,TMR0IF   ; clear the TMR0 interrupt
+                      00065 
+000B   2???           00066         call    _RESTORE_CONTEXT
+000C   0009           00067         retfie                  ; Service return
                       00068 
-                      00069 ; ------------------------------------------------------------------------------
-                      00070 ; Context SAVE/RESTORE routines
-                      00071 ;
-000A                  00072 _SAVE_CONTEXT:
-000A   00A0           00073         movwf   W_TMP           ;Copy W to TEMP register
-000B   0E03           00074         swapf   STATUS, W       ;Swap status to be saved into W
-000C   0183           00075         clrf    STATUS          ;bank 0, regardless of current bank, Clears IRP,RP1,RP0
-000D   00A1           00076         movwf   ST_TMP          ;Save status to bank zero STATUS_TEMP register
-000E   0008           00077         return
+                      00069 
+000D                  00070 _HANDLE_INT:
+000D   1283 1303      00071         banksel CURVAL
+000F   0BA5           00072         decfsz  CURVAL,F
+0010   2???           00073         goto    _EXIT_SERVICE
+                      00074         ; Reset to 64
+0011   3040           00075         movlw   0x40
+0012   00A5           00076         movwf   CURVAL
+0013   2???           00077         goto    _EXIT_SERVICE
                       00078 
-000F                  00079 _RESTORE_CONTEXT:
-000F   0E21           00080         SWAPF ST_TMP, W         ;Swap STATUS_TEMP register into W
-                      00081                                 ;(sets bank to original state)
-0010   0083           00082         MOVWF STATUS            ;Move W into STATUS register
-0011   0EA0           00083         SWAPF W_TMP, F          ;Swap W_TEMP
-0012   0E20           00084         SWAPF W_TMP, W          ;Swap W_TEMP into W
-0013   0008           00085         return
-                      00086 
-                      00087 
-                      00088 ; ------------------------------------------------------------------------------
-                      00089 ; Initialize hardware
-                      00090 ;
-0014                  00091 _SETUP:
-                      00092 ; Init clock to 8Mhz => 111
-0014   1683 1303      00093         banksel OSCCON          ; Bank 1, used for all other setup calls
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0016   160F           00094         bsf     OSCCON, IRCF0
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  3
+                      00079 
+                      00080 ; ------------------------------------------------------------------------------
+                      00081 ; Context SAVE/RESTORE routines
+                      00082 ;
+0014                  00083 _SAVE_CONTEXT:
+0014   00A0           00084         movwf   W_TMP           ;Copy W to TEMP register
+0015   0E03           00085         swapf   STATUS, W       ;Swap status to be saved into W
+0016   0183           00086         clrf    STATUS          ;bank 0, regardless of current bank, Clears IRP,RP1,RP0
+0017   00A1           00087         movwf   ST_TMP          ;Save status to bank zero STATUS_TEMP register
+0018   0008           00088         return
+                      00089 
+0019                  00090 _RESTORE_CONTEXT:
+0019   0E21           00091         SWAPF ST_TMP, W         ;Swap STATUS_TEMP register into W
+                      00092                                 ;(sets bank to original state)
+001A   0083           00093         MOVWF STATUS            ;Move W into STATUS register
+001B   0EA0           00094         SWAPF W_TMP, F          ;Swap W_TEMP
+001C   0E20           00095         SWAPF W_TMP, W          ;Swap W_TEMP into W
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0017   168F           00095         bsf     OSCCON, IRCF1
-Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0018   170F           00096         bsf     OSCCON, IRCF2
+001D   0008           00096         return
                       00097 
-                      00098 ; Init I/O ports
-0019   3006           00099         movlw   0x06            ; All digital
+                      00098 
+                      00099 ; ------------------------------------------------------------------------------
+                      00100 ; Initialize hardware
+                      00101 ;
+001E                  00102 _SETUP:
+                      00103 ; Init clock to 8Mhz => 111
+                      00104         ;banksel OSCCON         ; Bank 1, used for all other setup calls
+                      00105         ;bsf    OSCCON, IRCF0
+                      00106         ;bsf    OSCCON, IRCF1
+                      00107         ;bsf    OSCCON, IRCF2
+                      00108 
+                      00109 ; Init I/O ports
+001E   1683 1303      00110         banksel ADCON1
+0020   3000           00111         movlw   0x00            ; 0:4 Analog
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-001A   009F           00100         movwf   ADCON1
-                      00101 
-001B   3000           00102         movlw   0x00            ; PORTA - All output
+0021   009F           00112         movwf   ADCON1
+                      00113 
+0022   1683 1303      00114         banksel TRISA
+0024   30FF           00115         movlw   0xFF            ; PORTA - All input
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-001C   0085           00103         movwf   TRISA
-                      00104 
-001D   3001           00105         movlw   0x01            ; PORTB - Input only on RB0
+0025   0085           00116         movwf   TRISA
+                      00117 
+0026   1683 1303      00118         banksel TRISB
+0028   3001           00119         movlw   0x01            ; PORTB - Input only on RB0
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-001E   0086           00106         movwf   TRISB
-                      00107 
-                      00108 ; Configure interrupts
-001F   138B           00109         bcf     INTCON,GIE      ; Disable interrupts globally
-                      00110 
-                      00111 ; Init and Clear PORTA
-0020   1283 1303      00112         banksel PORTA
-0022   0185           00113         clrf    PORTA
-                      00114         ;bsf    PORTA,0         ; turn on RA0
-                      00115         ;comf   PORTA           ; turn on all bits
-                      00116 
-0023   01A2           00117         clrf    CNT1
-0024   01A3           00118         clrf    CNT2
-0025   01A4           00119         clrf    CNT3
-0026   0008           00120         return
+0029   0086           00120         movwf   TRISB
                       00121 
-                      00122 ; ------------------------------------------------------------------------------
-                      00123 ; Main code loop
-                      00124 ;
-                      00125 ;       Total ops between ecah comf should be:
-                      00126 ;               256 * (256 * 4 - 1) + 256 * 4 - 1 + 2 + 2
-                      00127 ;               257 * (256 * 4 - 1) + 4
-                      00128 ;               262,915 ops
-                      00129 ;
-0027                  00130 _MAIN:
-                      00131         ; 2 ops
-0027   1283 1303      00132         banksel PORTA
-0029   0985           00133         comf    PORTA,F
+                      00122 ; Configure interrupts
+002A   1283 1303      00123         banksel INTCON
+002C   138B           00124         bcf     INTCON,GIE      ; DISEnable interrupts globally
+                      00125 
+                      00126 ; Init and Clear PORTA
+002D   1283 1303      00127         banksel PORTA
+002F   0185           00128         clrf    PORTA
+                      00129 
+0030   1283 1303      00130         banksel CNT1
+0032   01A2           00131         clrf    CNT1
+0033   01A3           00132         clrf    CNT2
+0034   01A4           00133         clrf    CNT3
                       00134 
-002A                  00135 _CNT1:  ; Executes 256 * (4+26) - 1ops
-002A   0AA2           00136         incf    CNT1,F
-                      00137 
-                      00138         ; 26 NOP's to round out to 2M ops
-002B   0000           00139         nop
-002C   0000           00140         nop
-002D   0000           00141         nop
-002E   0000           00142         nop
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  4
+                      00135         ; Init to 64 steps
+0035   3040           00136         movlw   0x40
+0036   00A5           00137         movwf   CURVAL
+0037   0008           00138         return
+                      00139 
+                      00140 ; -------
+                      00141 ; Subs
+                      00142 ;
+                      00143 
+0038                  00144 _RB4_CLR:
+0038   1206           00145         bcf     PORTB,4
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-002F   0000           00143         nop
-0030   0000           00144         nop
-0031   0000           00145         nop
-0032   0000           00146         nop
-0033   0000           00147         nop
-0034   0000           00148         nop
-0035   0000           00149         nop
-0036   0000           00150         nop
-0037   0000           00151         nop
-0038   0000           00152         nop
-0039   0000           00153         nop
-003A   0000           00154         nop
-003B   0000           00155         nop
-003C   0000           00156         nop
-003D   0000           00157         nop
-003E   0000           00158         nop
-003F   0000           00159         nop
-0040   0000           00160         nop
-0041   0000           00161         nop
-0042   0000           00162         nop
-0043   0000           00163         nop
-0044   0000           00164         nop
-                      00165 
-0045   1D03           00166         btfss   STATUS,Z
-0046   2???           00167         goto    _CNT1
-                      00168 
-                      00169         ;movfw  CNT2
-                      00170         ;movw   PORTA
-                      00171 
-                      00172         ; Executes CNT1 256 times, plus 256*4-1
-0047   0AA3           00173         incf    CNT2,F
-0048   1D03           00174         btfss   STATUS,Z
-0049   2???           00175         goto    _CNT1
+0039   2???           00146         goto    _INIT_CNT1
+                      00147 
+                      00148 
+                      00149 ; ------------------------------------------------------------------------------
+                      00150 ; Main code loop
+                      00151 ;
+                      00152 ; RB4 drives LED
+                      00153 ; RB0 clock input
+                      00154 ;
+                      00155 
+003A                  00156 _MAIN:
+003A   1283 1303      00157         banksel CURVAL
+                      00158         ;comf   PORTA,F
+003C   01A5           00159         clrf    CURVAL
+                      00160 
+003D                  00161 _LOOP:
+003D   1283 1303      00162         banksel PORTB           ; Toggle RB4
+003F   1A06           00163         btfsc   PORTB,4
+0040   2???           00164         goto    _RB4_CLR
+0041   1606           00165         bsf     PORTB,4
+                      00166 
+0042                  00167 _INIT_CNT1:
+0042   1283 1303      00168         banksel CNT1            
+0044   30FF           00169         movlw   0xFF            ; Load counter
+0045   00A2           00170         movwf   CNT1
+                      00171         
+0046                  00172 _CNT1:  
+0046   0BA2           00173         decfsz  CNT1,F
+0047   2???           00174         goto    _INIT_CNT2
+0048   2???           00175         goto    _END;
                       00176 
-                      00177         ; 2 ops
-004A   2???           00178         goto    _MAIN
-3FEA                  00179         end
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  5
+0049                  00177 _INIT_CNT2:
+0049   1283 1303      00178         banksel CNT2
+004B   30FF           00179         movlw   0xFF            ; Load counter
+004C   00A3           00180         movwf   CNT2
+                      00181 
+004D                  00182 _CNT2:
+004D   0BA3           00183         decfsz  CNT2,F
+004E   2???           00184         goto    _INIT_CNT3
+004F   2???           00185         goto    _CNT1
+                      00186 
+0050                  00187 _INIT_CNT3:
+0050   1283 1303      00188         banksel CNT3
+0052   300F           00189         movlw   0x0F            ; Load counter
+0053   00A4           00190         movwf   CNT3
+                      00191 
+0054                  00192 _CNT3:
+0054   0BA4           00193         decfsz  CNT3,F
+0055   2???           00194         goto    _CNT3
+0056   2???           00195         goto    _CNT2
+                      00196 
+0057                  00197 _END:
+                      00198         ;bcf    PORTB,4
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  5
+
+
+LOC  OBJECT CODE     LINE SOURCE TEXT
+  VALUE
+
+0057   2???           00199         goto    _LOOP
+                      00200 
+0058                  00201 _ENDLESSLOOP:
+0058   0000           00202         nop
+0059   2???           00203         goto    _ENDLESSLOOP
+3FEA                  00204         end
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  6
 
 
 SYMBOL TABLE
@@ -257,6 +285,7 @@ CKP                               00000004
 CNT1                              00000022
 CNT2                              00000023
 CNT3                              00000024
+CURVAL                            00000025
 D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
@@ -276,13 +305,13 @@ FREE                              00000004
 FSR                               00000004
 GIE                               00000007
 GO                                00000002
-GO_DONE                           00000002
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  6
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  7
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+GO_DONE                           00000002
 GO_NOT_DONE                       00000002
 I2C_DATA                          00000005
 I2C_READ                          00000002
@@ -335,13 +364,13 @@ PS2                               00000002
 PSA                               00000003
 R                                 00000002
 RA0                               00000000
-RA1                               00000001
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  7
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  8
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RA1                               00000001
 RA2                               00000002
 RA3                               00000003
 RA4                               00000004
@@ -394,13 +423,13 @@ TMR0                              00000001
 TMR0IE                            00000005
 TMR0IF                            00000002
 TMR1CS                            00000001
-TMR1H                             0000000F
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  8
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TMR1H                             0000000F
 TMR1IE                            00000000
 TMR1IF                            00000000
 TMR1L                             0000000E
@@ -453,15 +482,17 @@ _CCP1_RB2                         00003FFF
 _CCP1_RB3                         00002FFF
 _CCPMX_RB2                        00003FFF
 _CCPMX_RB3                        00002FFF
-_CHECK_INT                        00000008
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE  9
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE 10
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+_CHECK_INT                        00000008
 _CHECK_TMR0                       00000008
-_CNT1                             0000002A
+_CNT1                             00000046
+_CNT2                             0000004D
+_CNT3                             00000054
 _CONFIG                           00002007
 _CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
@@ -471,7 +502,9 @@ _CP_ON                            00001FFF
 _DEBUG_OFF                        00003FFF
 _DEBUG_ON                         000037FF
 _DEVID1                           00002006
-_EXIT_SERVICE                     00000008
+_END                              00000057
+_ENDLESSLOOP                      00000058
+_EXIT_SERVICE                     0000000A
 _EXTCLK                           00003FEF
 _EXTRC_CLKOUT                     00003FFF
 _EXTRC_IO                         00003FFE
@@ -483,28 +516,40 @@ _FOSC_INTOSCCLK                   00003FFD
 _FOSC_INTOSCIO                    00003FFC
 _FOSC_LP                          00003FEC
 _FOSC_XT                          00003FED
+_HANDLE_INT                       0000000D
 _HS_OSC                           00003FEE
 _IDLOC0                           00002000
 _IDLOC1                           00002001
 _IDLOC2                           00002002
 _IDLOC3                           00002003
+_INIT_CNT1                        00000042
+_INIT_CNT2                        00000049
+_INIT_CNT3                        00000050
 _INTRC_CLKOUT                     00003FFD
 _INTRC_IO                         00003FFC
+_LOOP                             0000003D
 _LP_OSC                           00003FEC
 _LVP_OFF                          00003F7F
 _LVP_ON                           00003FFF
-_MAIN                             00000027
+_MAIN                             0000003A
 _MCLRE_OFF                        00003FDF
 _MCLRE_ON                         00003FFF
 _MCLR_OFF                         00003FDF
 _MCLR_ON                          00003FFF
 _PWRTE_OFF                        00003FFF
 _PWRTE_ON                         00003FF7
-_RESTORE_CONTEXT                  0000000F
-_SAVE_CONTEXT                     0000000A
+_RB4_CLR                          00000038
+_RESTORE_CONTEXT                  00000019
+_SAVE_CONTEXT                     00000014
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  12:56:27         PAGE 11
+
+
+SYMBOL TABLE
+  LABEL                             VALUE 
+
 _SERVICE                          00000005
-_SETUP                            00000014
-_UNHANDLED                        00000008
+_SETUP                            0000001E
+_UNHANDLED                        0000000A
 _WDTE_OFF                         00003FFB
 _WDTE_ON                          00003FFF
 _WDT_OFF                          00003FFB
@@ -513,12 +558,6 @@ _WRT_1024                         00003BFF
 _WRT_1536                         000039FF
 _WRT_512                          00003DFF
 _WRT_ENABLE_1024                  00003BFF
-MPASM  5.43                    CLOCK.TEST.ASM   2-17-2012  13:22:41         PAGE 10
-
-
-SYMBOL TABLE
-  LABEL                             VALUE 
-
 _WRT_ENABLE_1536                  000039FF
 _WRT_ENABLE_512                   00003DFF
 _WRT_ENABLE_OFF                   00003FFF
@@ -528,6 +567,6 @@ __16F819                          00000001
 
 Errors   :     0
 Warnings :     0 reported,     0 suppressed
-Messages :     6 reported,     0 suppressed
+Messages :     3 reported,     0 suppressed
 
 
