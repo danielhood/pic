@@ -1,3 +1,4 @@
 Message[302] SRC\CLOCKED.INPUT.ASM 112 : Register in operand not in bank 0.  Ensure that bank bits are correct.
 Message[302] SRC\CLOCKED.INPUT.ASM 116 : Register in operand not in bank 0.  Ensure that bank bits are correct.
 Message[302] SRC\CLOCKED.INPUT.ASM 120 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 130 : Register in operand not in bank 0.  Ensure that bank bits are correct.

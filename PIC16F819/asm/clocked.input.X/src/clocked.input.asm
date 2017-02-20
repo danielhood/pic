@@ -121,11 +121,20 @@ _SETUP:
 
 ; Configure interrupts
 	banksel	INTCON
-	bcf	INTCON,GIE	; DISEnable interrupts globally
+	bcf	INTCON,GIE	; Enable interrupts globally
+	bsf	INTCON,INTE	; Enable external int on RB0
 
-; Init and Clear PORTA
+; Configure External interrupt
+	banksel	OPTION_REG
+	movlw	0xC0		; Rising edge
+	movwf	OPTION_REG
+
+
+
+; Init and Clear PORTA and PORTB
 	banksel	PORTA
 	clrf	PORTA
+	clrf	PORTB
 
 	banksel	CNT1
 	clrf	CNT1
@@ -143,7 +152,8 @@ _SETUP:
 
 _RB4_CLR:
 	bcf	PORTB,4
-	goto	_INIT_CNT1
+	;goto	_INIT_CNT1
+	goto	_UPDATE_RB4
 
 
 ; ------------------------------------------------------------------------------
@@ -154,9 +164,18 @@ _RB4_CLR:
 ;
 
 _MAIN:
-	banksel	CURVAL
-	;comf	PORTA,F
-	clrf	CURVAL
+
+
+_UPDATE_RB4:
+	nop
+	;btfss	CURVAL,0
+	;goto	_RB4_CLR
+	;bsf	PORTB,4
+
+	movfw	CURVAL
+	movwf	PORTB
+
+	goto _UPDATE_RB4
 
 _LOOP:
 	banksel	PORTB		; Toggle RB4
