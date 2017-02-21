@@ -23,7 +23,8 @@
 	CNT1
 	CNT2
 	CNT3
-	CURVAL
+	CLOCKVAL
+	ADVAL
 	SAMPDONE
 	endc
 
@@ -70,12 +71,13 @@ _EXIT_SERVICE:
 
 
 _HANDLE_INT:
-	banksel	CURVAL
-	decfsz	CURVAL,F
-	goto	_EXIT_SERVICE
+	banksel	CLOCKVAL
+	decfsz	CLOCKVAL,F
+	goto	_HANDLE_INT_END
 	; Reset to 64
 	movlw	0x40
-	movwf	CURVAL
+	movwf	CLOCKVAL
+_HANDLE_INT_END:
 	bcf	INTCON,INTF	; clear the INT interrupt
 	goto	_EXIT_SERVICE
 
@@ -83,8 +85,8 @@ _HANDLE_ADI:
 	banksel ADRESH		; Copy current AD conversion to CURVAL
 	movfw	ADRESH
 
-	banksel CURVAL
-	movwf	CURVAL
+	banksel ADVAL
+	movwf	ADVAL
 	bcf	PIR1,ADIF	; clear ADI
 	goto	_EXIT_SERVICE
 
@@ -132,9 +134,9 @@ _SETUP:
 
 ; Configure interrupts
 	banksel	PIE1
-	bsf	PIE1,ADIE	; Enale ad conversion interrupt
+	bsf	PIE1,ADIE	; Enable AD conversion interrupt
 	banksel	INTCON
-	bcf	INTCON,INTE	; DIS-Enable external int on RB0
+	bsf	INTCON,INTE	; Enable external int on RB0
 	bsf	INTCON,PEIE	; Enable periferial interrups for ADI
 	bsf	INTCON,GIE	; Enable interrupts globally
 
@@ -157,9 +159,9 @@ _SETUP:
 
 	; Init to 64 steps
 	movlw	0x40
-	movwf	CURVAL
+	movwf	CLOCKVAL
 
-	clrf	CURVAL
+	clrf	ADVAL
 	clrf	SAMPDONE
 	bsf	SAMPDONE,0	; Trigger sampling on start
 
@@ -183,7 +185,11 @@ _SETUP:
 _RB4_CLR:
 	bcf	PORTB,4
 	;goto	_INIT_CNT1
-	goto	_UPDATE_RB4
+	goto	_RB4_CLR_RET
+
+_RB5_CLR:
+	bcf	PORTB,5
+	goto	_RB5_CLR_RET
 
 _START_SAMPLE:
 	banksel	ADCON0
@@ -208,17 +214,26 @@ _LOOP:
 
 _UPDATE_RB4:
 	nop
-	;btfss	CURVAL,0
-	;goto	_RB4_CLR
-	;bsf	PORTB,4
+	banksel CLOCKVAL
+	btfss	CLOCKVAL,0	; Clock Counter
+	goto	_RB4_CLR
+	bsf	PORTB,4
 
-	banksel CURVAL
-	movfw	CURVAL		; Push CURVAL to PORTB
-	banksel PORTB
-	movwf	PORTB
-
+_RB4_CLR_RET:
 	;goto _UPDATE_RB4
 
+	banksel ADVAL
+	movfw	ADVAL		; AD Sample
+	;banksel PORTB
+	;movwf	PORTB		; Dump the value onto Port B
+
+	banksel	CNT1
+	sublw	0xFE		; Light up RB5 if ADVAL > literal
+	btfsc	STATUS,C	; Skip if borrow (inverted carry)
+	goto	_RB5_CLR	; no borrow -> ADVAL <= literal
+	bsf	PORTB,5		; borrow -> ADVAL > literal
+
+_RB5_CLR_RET:
 	;banksel	PORTB		; Toggle RB4
 	;btfsc	PORTB,4
 	;goto	_RB4_CLR
@@ -251,7 +266,7 @@ _CNT1:
 
 _INIT_CNT2:
 	banksel	CNT2
-	movlw	0xFF		; Load counter
+	movlw	0x80		; Load counter
 	movwf	CNT2
 
 _CNT2:
@@ -261,7 +276,7 @@ _CNT2:
 
 _INIT_CNT3:
 	banksel	CNT3
-	movlw	0x0F		; Load counter
+	movlw	0x01		; Load counter
 	movwf	CNT3
 
 _CNT3:

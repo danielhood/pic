@@ -1,6 +1,6 @@
-Message[302] SRC\CLOCKED.INPUT.ASM 123 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCKED.INPUT.ASM 127 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCKED.INPUT.ASM 131 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCKED.INPUT.ASM 135 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCKED.INPUT.ASM 146 : Register in operand not in bank 0.  Ensure that bank bits are correct.
-Message[302] SRC\CLOCKED.INPUT.ASM 175 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 125 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 129 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 133 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 137 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 148 : Register in operand not in bank 0.  Ensure that bank bits are correct.
+Message[302] SRC\CLOCKED.INPUT.ASM 177 : Register in operand not in bank 0.  Ensure that bank bits are correct.

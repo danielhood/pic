@@ -1,4 +1,4 @@
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  1
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  1
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
@@ -40,298 +40,312 @@ LOC  OBJECT CODE     LINE SOURCE TEXT
   00000022            00023         CNT1
   00000023            00024         CNT2
   00000024            00025         CNT3
-  00000025            00026         CURVAL
-  00000026            00027         SAMPDONE
-                      00028         endc
-                      00029 
+  00000025            00026         CLOCKVAL
+  00000026            00027         ADVAL
+  00000027            00028         SAMPDONE
+                      00029         endc
                       00030 
-                      00031 ; ------------------------------------------------------------------------------
-                      00032 ; Main entry and RESET vector
-                      00033 ;
-                      00034         org     0x0000
-0000   2???           00035         call    _SETUP          ; Init hardware
-0001   2???           00036         goto    _MAIN           ; Jump to main code defined in Example.asm
-                      00037 
+                      00031 
+                      00032 ; ------------------------------------------------------------------------------
+                      00033 ; Main entry and RESET vector
+                      00034 ;
+                      00035         org     0x0000
+0000   2???           00036         call    _SETUP          ; Init hardware
+0001   2???           00037         goto    _MAIN           ; Jump to main code defined in Example.asm
                       00038 
-                      00039 ; ------------------------------------------------------------------------------
-                      00040 ; Interrupt vector
-                      00041 ;
-                      00042         org     0x0004
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  2
+                      00039 
+                      00040 ; ------------------------------------------------------------------------------
+                      00041 ; Interrupt vector
+                      00042 ;
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  2
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0004   2???           00043         goto    _SERVICE        ; Points to interrupt service routine
-                      00044 
+                      00043         org     0x0004
+0004   2???           00044         goto    _SERVICE        ; Points to interrupt service routine
                       00045 
-                      00046 ; ------------------------------------------------------------------------------
-                      00047 ; Dispatcher for interrupt handlers
-                      00048 ;
-0005                  00049 _SERVICE:
-0005   1283 1303      00050         banksel PORTA
-0007   2???           00051         call    _SAVE_CONTEXT
-                      00052 
-                      00053         ; Assumes only one interrupt will be enabled at a time
-0008                  00054 _CHECK_TMR0:
-                      00055         ;btfsc  INTCON,TMR0IF   ; Check for Timer0 interrupt
-                      00056         ;goto   _HANDLE_TMR0
-0008                  00057 _CHECK_INT:
-0008   188B           00058         btfsc   INTCON,INTF     ; Check for INT/RB0 interrupt
-0009   2???           00059         goto    _HANDLE_INT
-000A                  00060 _CHECK_ADI:
-000A   1B0C           00061         btfsc   PIR1,ADIF
-000B   2???           00062         goto    _HANDLE_ADI
-                      00063 
-000C                  00064 _UNHANDLED:
-                      00065 
-000C                  00066 _EXIT_SERVICE:
-                      00067         ;bcf    INTCON,TMR0IF   ; clear the TMR0 interrupt
-000C   2???           00068         call    _RESTORE_CONTEXT
-000D   0009           00069         retfie                  ; Service return
-                      00070 
+                      00046 
+                      00047 ; ------------------------------------------------------------------------------
+                      00048 ; Dispatcher for interrupt handlers
+                      00049 ;
+0005                  00050 _SERVICE:
+0005   1283 1303      00051         banksel PORTA
+0007   2???           00052         call    _SAVE_CONTEXT
+                      00053 
+                      00054         ; Assumes only one interrupt will be enabled at a time
+0008                  00055 _CHECK_TMR0:
+                      00056         ;btfsc  INTCON,TMR0IF   ; Check for Timer0 interrupt
+                      00057         ;goto   _HANDLE_TMR0
+0008                  00058 _CHECK_INT:
+0008   188B           00059         btfsc   INTCON,INTF     ; Check for INT/RB0 interrupt
+0009   2???           00060         goto    _HANDLE_INT
+000A                  00061 _CHECK_ADI:
+000A   1B0C           00062         btfsc   PIR1,ADIF
+000B   2???           00063         goto    _HANDLE_ADI
+                      00064 
+000C                  00065 _UNHANDLED:
+                      00066 
+000C                  00067 _EXIT_SERVICE:
+                      00068         ;bcf    INTCON,TMR0IF   ; clear the TMR0 interrupt
+000C   2???           00069         call    _RESTORE_CONTEXT
+000D   0009           00070         retfie                  ; Service return
                       00071 
-000E                  00072 _HANDLE_INT:
-000E   1283 1303      00073         banksel CURVAL
-0010   0BA5           00074         decfsz  CURVAL,F
-0011   2???           00075         goto    _EXIT_SERVICE
-                      00076         ; Reset to 64
-0012   3040           00077         movlw   0x40
-0013   00A5           00078         movwf   CURVAL
-0014   108B           00079         bcf     INTCON,INTF     ; clear the INT interrupt
-0015   2???           00080         goto    _EXIT_SERVICE
-                      00081 
-0016                  00082 _HANDLE_ADI:    ; !! Haven't been able to get the AD interrupt to fire, direct polling of the GO/DONE bi
-                            t works tho, so ADC is working
-0016   1283 1303      00083         banksel ADRESH          ; Copy current AD conversion to CURVAL
-0018   081E           00084         movfw   ADRESH
-                      00085 
-0019   1283 1303      00086         banksel CURVAL
-001B   00A5           00087         movwf   CURVAL
-001C   130C           00088         bcf     PIR1,ADIF       ; clear ADI
-001D   2???           00089         goto    _EXIT_SERVICE
-                      00090 
-                      00091 ; ------------------------------------------------------------------------------
-                      00092 ; Context SAVE/RESTORE routines
-                      00093 ;
-001E                  00094 _SAVE_CONTEXT:
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  3
+                      00072 
+000E                  00073 _HANDLE_INT:
+000E   1283 1303      00074         banksel CLOCKVAL
+0010   0BA5           00075         decfsz  CLOCKVAL,F
+0011   2???           00076         goto    _HANDLE_INT_END
+                      00077         ; Reset to 64
+0012   3040           00078         movlw   0x40
+0013   00A5           00079         movwf   CLOCKVAL
+0014                  00080 _HANDLE_INT_END:
+0014   108B           00081         bcf     INTCON,INTF     ; clear the INT interrupt
+0015   2???           00082         goto    _EXIT_SERVICE
+                      00083 
+0016                  00084 _HANDLE_ADI:
+0016   1283 1303      00085         banksel ADRESH          ; Copy current AD conversion to CURVAL
+0018   081E           00086         movfw   ADRESH
+                      00087 
+0019   1283 1303      00088         banksel ADVAL
+001B   00A6           00089         movwf   ADVAL
+001C   130C           00090         bcf     PIR1,ADIF       ; clear ADI
+001D   2???           00091         goto    _EXIT_SERVICE
+                      00092 
+                      00093 ; ------------------------------------------------------------------------------
+                      00094 ; Context SAVE/RESTORE routines
+                      00095 ;
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  3
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-001E   00A0           00095         movwf   W_TMP           ;Copy W to TEMP register
-001F   0E03           00096         swapf   STATUS, W       ;Swap status to be saved into W
-0020   0183           00097         clrf    STATUS          ;bank 0, regardless of current bank, Clears IRP,RP1,RP0
-0021   00A1           00098         movwf   ST_TMP          ;Save status to bank zero STATUS_TEMP register
-0022   0008           00099         return
-                      00100 
-0023                  00101 _RESTORE_CONTEXT:
-0023   0E21           00102         SWAPF ST_TMP, W         ;Swap STATUS_TEMP register into W
-                      00103                                 ;(sets bank to original state)
-0024   0083           00104         MOVWF STATUS            ;Move W into STATUS register
-0025   0EA0           00105         SWAPF W_TMP, F          ;Swap W_TEMP
-0026   0E20           00106         SWAPF W_TMP, W          ;Swap W_TEMP into W
-0027   0008           00107         return
-                      00108 
-                      00109 
-                      00110 ; ------------------------------------------------------------------------------
-                      00111 ; Initialize hardware
-                      00112 ;
-0028                  00113 _SETUP:
-                      00114 ; Init clock to 8Mhz => 111
-                      00115         ;banksel OSCCON         ; Bank 1, used for all other setup calls
-                      00116         ;bsf    OSCCON, IRCF0
-                      00117         ;bsf    OSCCON, IRCF1
-                      00118         ;bsf    OSCCON, IRCF2
-                      00119 
-                      00120 ; Init I/O ports
-0028   1683 1303      00121         banksel ADCON1
-002A   3000           00122         movlw   0x00            ; 0:4 Analog
+001E                  00096 _SAVE_CONTEXT:
+001E   00A0           00097         movwf   W_TMP           ;Copy W to TEMP register
+001F   0E03           00098         swapf   STATUS, W       ;Swap status to be saved into W
+0020   0183           00099         clrf    STATUS          ;bank 0, regardless of current bank, Clears IRP,RP1,RP0
+0021   00A1           00100         movwf   ST_TMP          ;Save status to bank zero STATUS_TEMP register
+0022   0008           00101         return
+                      00102 
+0023                  00103 _RESTORE_CONTEXT:
+0023   0E21           00104         SWAPF ST_TMP, W         ;Swap STATUS_TEMP register into W
+                      00105                                 ;(sets bank to original state)
+0024   0083           00106         MOVWF STATUS            ;Move W into STATUS register
+0025   0EA0           00107         SWAPF W_TMP, F          ;Swap W_TEMP
+0026   0E20           00108         SWAPF W_TMP, W          ;Swap W_TEMP into W
+0027   0008           00109         return
+                      00110 
+                      00111 
+                      00112 ; ------------------------------------------------------------------------------
+                      00113 ; Initialize hardware
+                      00114 ;
+0028                  00115 _SETUP:
+                      00116 ; Init clock to 8Mhz => 111
+                      00117         ;banksel OSCCON         ; Bank 1, used for all other setup calls
+                      00118         ;bsf    OSCCON, IRCF0
+                      00119         ;bsf    OSCCON, IRCF1
+                      00120         ;bsf    OSCCON, IRCF2
+                      00121 
+                      00122 ; Init I/O ports
+0028   1683 1303      00123         banksel ADCON1
+002A   3000           00124         movlw   0x00            ; 0:4 Analog
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-002B   009F           00123         movwf   ADCON1
-                      00124 
-002C   1683 1303      00125         banksel TRISA
-002E   30FF           00126         movlw   0xFF            ; PORTA - All input
+002B   009F           00125         movwf   ADCON1
+                      00126 
+002C   1683 1303      00127         banksel TRISA
+002E   30FF           00128         movlw   0xFF            ; PORTA - All input
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-002F   0085           00127         movwf   TRISA
-                      00128 
-0030   1683 1303      00129         banksel TRISB
-0032   3001           00130         movlw   0x01            ; PORTB - Input only on RB0
+002F   0085           00129         movwf   TRISA
+                      00130 
+0030   1683 1303      00131         banksel TRISB
+0032   3001           00132         movlw   0x01            ; PORTB - Input only on RB0
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0033   0086           00131         movwf   TRISB
-                      00132 
-                      00133 ; Configure interrupts
-0034   1683 1303      00134         banksel PIE1
+0033   0086           00133         movwf   TRISB
+                      00134 
+                      00135 ; Configure interrupts
+0034   1683 1303      00136         banksel PIE1
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0036   170C           00135         bsf     PIE1,ADIE       ; Enale ad conversion interrupt
-0037   1283 1303      00136         banksel INTCON
-0039   120B           00137         bcf     INTCON,INTE     ; DIS-Enable external int on RB0
-003A   170B           00138         bsf     INTCON,PEIE     ; Enable periferial interrups for ADI
-003B   178B           00139         bsf     INTCON,GIE      ; Enable interrupts globally
-                      00140 
-003C   130C           00141         bcf     PIR1,ADIF       ; clear ADI
+0036   170C           00137         bsf     PIE1,ADIE       ; Enable AD conversion interrupt
+0037   1283 1303      00138         banksel INTCON
+0039   160B           00139         bsf     INTCON,INTE     ; Enable external int on RB0
+003A   170B           00140         bsf     INTCON,PEIE     ; Enable periferial interrups for ADI
+003B   178B           00141         bsf     INTCON,GIE      ; Enable interrupts globally
                       00142 
-                      00143 ; Configure External interrupt
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  4
+003C   130C           00143         bcf     PIR1,ADIF       ; clear ADI
+                      00144 
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  4
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-003D   1683 1303      00144         banksel OPTION_REG
-003F   30C0           00145         movlw   0xC0            ; Rising edge
+                      00145 ; Configure External interrupt
+003D   1683 1303      00146         banksel OPTION_REG
+003F   30C0           00147         movlw   0xC0            ; Rising edge
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0040   0081           00146         movwf   OPTION_REG
-                      00147 
-                      00148 ; Init and Clear PORTA and PORTB
-0041   1283 1303      00149         banksel PORTA
-0043   0185           00150         clrf    PORTA
-0044   0186           00151         clrf    PORTB
-                      00152 
-0045   1283 1303      00153         banksel CNT1
-0047   01A2           00154         clrf    CNT1
-0048   01A3           00155         clrf    CNT2
-0049   01A4           00156         clrf    CNT3
-                      00157 
-                      00158         ; Init to 64 steps
-004A   3040           00159         movlw   0x40
-004B   00A5           00160         movwf   CURVAL
-                      00161 
-004C   01A5           00162         clrf    CURVAL
-004D   01A6           00163         clrf    SAMPDONE
-004E   1426           00164         bsf     SAMPDONE,0      ; Trigger sampling on start
-                      00165 
-                      00166 
+0040   0081           00148         movwf   OPTION_REG
+                      00149 
+                      00150 ; Init and Clear PORTA and PORTB
+0041   1283 1303      00151         banksel PORTA
+0043   0185           00152         clrf    PORTA
+0044   0186           00153         clrf    PORTB
+                      00154 
+0045   1283 1303      00155         banksel CNT1
+0047   01A2           00156         clrf    CNT1
+0048   01A3           00157         clrf    CNT2
+0049   01A4           00158         clrf    CNT3
+                      00159 
+                      00160         ; Init to 64 steps
+004A   3040           00161         movlw   0x40
+004B   00A5           00162         movwf   CLOCKVAL
+                      00163 
+004C   01A6           00164         clrf    ADVAL
+004D   01A7           00165         clrf    SAMPDONE
+004E   1427           00166         bsf     SAMPDONE,0      ; Trigger sampling on start
                       00167 
-                      00168 ;Setup AD Conversion on A0 for now
-004F   1283 1303      00169         banksel ADCON0
-0051   3081           00170         movlw   0x81    ; AD Enabled on A0, 32Tosc clock
-0052   009F           00171         movwf   ADCON0
-                      00172 
-0053   1683 1303      00173         banksel ADCON1
-0055   3000           00174         movlw   0x00    ; left justify since we're only going to read ADRESH for now
+                      00168 
+                      00169 
+                      00170 ;Setup AD Conversion on A0 for now
+004F   1283 1303      00171         banksel ADCON0
+0051   3081           00172         movlw   0x81    ; AD Enabled on A0, 32Tosc clock
+0052   009F           00173         movwf   ADCON0
+                      00174 
+0053   1683 1303      00175         banksel ADCON1
+0055   3000           00176         movlw   0x00    ; left justify since we're only going to read ADRESH for now
 Message[302]: Register in operand not in bank 0.  Ensure that bank bits are correct.
-0056   009F           00175         movwf   ADCON1
-                      00176 
-0057   0008           00177         return
+0056   009F           00177         movwf   ADCON1
                       00178 
-                      00179 ; -------
-                      00180 ; Subs
-                      00181 ;
-                      00182 
-0058                  00183 _RB4_CLR:
-0058   1206           00184         bcf     PORTB,4
-                      00185         ;goto   _INIT_CNT1
-0059   2???           00186         goto    _UPDATE_RB4
-                      00187 
-005A                  00188 _START_SAMPLE:
-005A   1283 1303      00189         banksel ADCON0
-005C   151F           00190         bsf     ADCON0,2        ; Start Sampling
-                      00191                         ; End will be handled by interrupt
-005D   1283 1303      00192         banksel SAMPDONE
-005F   01A6           00193         clrf    SAMPDONE
-0060   2???           00194         goto    _INIT_CNT1
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  5
+0057   0008           00179         return
+                      00180 
+                      00181 ; -------
+                      00182 ; Subs
+                      00183 ;
+                      00184 
+0058                  00185 _RB4_CLR:
+0058   1206           00186         bcf     PORTB,4
+                      00187         ;goto   _INIT_CNT1
+0059   2???           00188         goto    _RB4_CLR_RET
+                      00189 
+005A                  00190 _RB5_CLR:
+005A   1286           00191         bcf     PORTB,5
+005B   2???           00192         goto    _RB5_CLR_RET
+                      00193 
+005C                  00194 _START_SAMPLE:
+005C   1283 1303      00195         banksel ADCON0
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  5
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-                      00195 
-                      00196 
-                      00197 ; ------------------------------------------------------------------------------
-                      00198 ; Main code loop
-                      00199 ;
-                      00200 ; RB4 drives LED
-                      00201 ; RB0 clock input
-                      00202 ;
-                      00203 
-0061                  00204 _MAIN:
-                      00205 
-                      00206 
-0061                  00207 _LOOP:
-                      00208 
-0061                  00209 _UPDATE_RB4:
-0061   0000           00210         nop
-                      00211         ;btfss  CURVAL,0
-                      00212         ;goto   _RB4_CLR
-                      00213         ;bsf    PORTB,4
+005E   151F           00196         bsf     ADCON0,2        ; Start Sampling
+                      00197                         ; End will be handled by interrupt
+005F   1283 1303      00198         banksel SAMPDONE
+0061   01A7           00199         clrf    SAMPDONE
+0062   2???           00200         goto    _INIT_CNT1
+                      00201 
+                      00202 
+                      00203 ; ------------------------------------------------------------------------------
+                      00204 ; Main code loop
+                      00205 ;
+                      00206 ; RB4 drives LED
+                      00207 ; RB0 clock input
+                      00208 ;
+                      00209 
+0063                  00210 _MAIN:
+                      00211 
+                      00212 
+0063                  00213 _LOOP:
                       00214 
-0062   1283 1303      00215         banksel CURVAL
-0064   0825           00216         movfw   CURVAL          ; Push CURVAL to PORTB
-0065   1283 1303      00217         banksel PORTB
-0067   0086           00218         movwf   PORTB
-                      00219 
-                      00220         ;goto _UPDATE_RB4
+0063                  00215 _UPDATE_RB4:
+0063   0000           00216         nop
+0064   1283 1303      00217         banksel CLOCKVAL
+0066   1C25           00218         btfss   CLOCKVAL,0      ; Clock Counter
+0067   2???           00219         goto    _RB4_CLR
+0068   1606           00220         bsf     PORTB,4
                       00221 
-                      00222         ;banksel        PORTB           ; Toggle RB4
-                      00223         ;btfsc  PORTB,4
-                      00224         ;goto   _RB4_CLR
-                      00225         ;bsf    PORTB,4
-                      00226 
-0068                  00227 _CHECK_SAMPLE:
-0068   1826           00228         btfsc   SAMPDONE,0
-0069   2???           00229         goto    _START_SAMPLE
-006A   191F           00230         btfsc   ADCON0,2
-006B   2???           00231         goto    _INIT_CNT1
-006C   1426           00232         bsf     SAMPDONE,0      ; Signal that sampling is done so that next loop we can restart sampling
-                      00233 
-                      00234         ;banksel ADRESH         ; Copy current AD conversion to CURVAL
-                      00235         ;movfw  ADRESH
-                      00236 
-                      00237         ;banksel        CURVAL
-                      00238         ;movlw  0xff
-                      00239         ;movwf  CURVAL
-                      00240 
+0069                  00222 _RB4_CLR_RET:
+                      00223         ;goto _UPDATE_RB4
+                      00224 
+0069   1283 1303      00225         banksel ADVAL
+006B   0826           00226         movfw   ADVAL           ; AD Sample
+                      00227         ;banksel PORTB
+                      00228         ;movwf  PORTB           ; Dump the value onto Port B
+                      00229 
+006C   1283 1303      00230         banksel CNT1
+006E   3CFE           00231         sublw   0xFE            ; Light up RB5 if ADVAL > literal
+006F   1803           00232         btfsc   STATUS,C        ; Skip if borrow (inverted carry)
+0070   2???           00233         goto    _RB5_CLR        ; no borrow -> ADVAL <= literal
+0071   1686           00234         bsf     PORTB,5         ; borrow -> ADVAL > literal
+                      00235 
+0072                  00236 _RB5_CLR_RET:
+                      00237         ;banksel        PORTB           ; Toggle RB4
+                      00238         ;btfsc  PORTB,4
+                      00239         ;goto   _RB4_CLR
+                      00240         ;bsf    PORTB,4
                       00241 
-006D                  00242 _INIT_CNT1:
-006D   1283 1303      00243         banksel CNT1            
-006F   30FF           00244         movlw   0xFF            ; Load counter
-0070   00A2           00245         movwf   CNT1
-                      00246         
-0071                  00247 _CNT1:  
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  6
+0072                  00242 _CHECK_SAMPLE:
+0072   1827           00243         btfsc   SAMPDONE,0
+0073   2???           00244         goto    _START_SAMPLE
+0074   191F           00245         btfsc   ADCON0,2
+0075   2???           00246         goto    _INIT_CNT1
+0076   1427           00247         bsf     SAMPDONE,0      ; Signal that sampling is done so that next loop we can restart sampling
+                      00248 
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  6
 
 
 LOC  OBJECT CODE     LINE SOURCE TEXT
   VALUE
 
-0071   0BA2           00248         decfsz  CNT1,F
-0072   2???           00249         goto    _INIT_CNT2
-0073   2???           00250         goto    _END
+                      00249         ;banksel ADRESH         ; Copy current AD conversion to CURVAL
+                      00250         ;movfw  ADRESH
                       00251 
-0074                  00252 _INIT_CNT2:
-0074   1283 1303      00253         banksel CNT2
-0076   30FF           00254         movlw   0xFF            ; Load counter
-0077   00A3           00255         movwf   CNT2
+                      00252         ;banksel        CURVAL
+                      00253         ;movlw  0xff
+                      00254         ;movwf  CURVAL
+                      00255 
                       00256 
-0078                  00257 _CNT2:
-0078   0BA3           00258         decfsz  CNT2,F
-0079   2???           00259         goto    _INIT_CNT3
-007A   2???           00260         goto    _CNT1
-                      00261 
-007B                  00262 _INIT_CNT3:
-007B   1283 1303      00263         banksel CNT3
-007D   300F           00264         movlw   0x0F            ; Load counter
-007E   00A4           00265         movwf   CNT3
+0077                  00257 _INIT_CNT1:
+0077   1283 1303      00258         banksel CNT1            
+0079   30FF           00259         movlw   0xFF            ; Load counter
+007A   00A2           00260         movwf   CNT1
+                      00261         
+007B                  00262 _CNT1:  
+007B   0BA2           00263         decfsz  CNT1,F
+007C   2???           00264         goto    _INIT_CNT2
+007D   2???           00265         goto    _END
                       00266 
-007F                  00267 _CNT3:
-007F   0BA4           00268         decfsz  CNT3,F
-0080   2???           00269         goto    _CNT3
-0081   2???           00270         goto    _CNT2
+007E                  00267 _INIT_CNT2:
+007E   1283 1303      00268         banksel CNT2
+0080   3080           00269         movlw   0x80            ; Load counter
+0081   00A3           00270         movwf   CNT2
                       00271 
-0082                  00272 _END:
-                      00273         ;bcf    PORTB,4
-0082   2???           00274         goto    _LOOP
-                      00275 
-0083                  00276 _ENDLESSLOOP:
-0083   0000           00277         nop
-0084   2???           00278         goto    _ENDLESSLOOP
-3FEA                  00279         end
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  7
+0082                  00272 _CNT2:
+0082   0BA3           00273         decfsz  CNT2,F
+0083   2???           00274         goto    _INIT_CNT3
+0084   2???           00275         goto    _CNT1
+                      00276 
+0085                  00277 _INIT_CNT3:
+0085   1283 1303      00278         banksel CNT3
+0087   3001           00279         movlw   0x01            ; Load counter
+0088   00A4           00280         movwf   CNT3
+                      00281 
+0089                  00282 _CNT3:
+0089   0BA4           00283         decfsz  CNT3,F
+008A   2???           00284         goto    _CNT3
+008B   2???           00285         goto    _CNT2
+                      00286 
+008C                  00287 _END:
+                      00288         ;bcf    PORTB,4
+008C   2???           00289         goto    _LOOP
+                      00290 
+008D                  00291 _ENDLESSLOOP:
+008D   0000           00292         nop
+008E   2???           00293         goto    _ENDLESSLOOP
+3FEA                  00294         end
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  7
 
 
 SYMBOL TABLE
@@ -348,6 +362,7 @@ ADIF                              00000006
 ADON                              00000000
 ADRESH                            0000001E
 ADRESL                            0000009E
+ADVAL                             00000026
 BF                                00000000
 C                                 00000000
 CCP1CON                           00000017
@@ -367,10 +382,10 @@ CHS1                              00000004
 CHS2                              00000005
 CKE                               00000006
 CKP                               00000004
+CLOCKVAL                          00000025
 CNT1                              00000022
 CNT2                              00000023
 CNT3                              00000024
-CURVAL                            00000025
 D                                 00000005
 DATA_ADDRESS                      00000005
 DC                                00000001
@@ -389,13 +404,13 @@ F                                 00000001
 FREE                              00000004
 FSR                               00000004
 GIE                               00000007
-GO                                00000002
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  8
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  8
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+GO                                00000002
 GO_DONE                           00000002
 GO_NOT_DONE                       00000002
 I2C_DATA                          00000005
@@ -448,13 +463,13 @@ PS1                               00000001
 PS2                               00000002
 PSA                               00000003
 R                                 00000002
-RA0                               00000000
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE  9
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE  9
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+RA0                               00000000
 RA1                               00000001
 RA2                               00000002
 RA3                               00000003
@@ -479,7 +494,7 @@ RP1                               00000006
 R_NOT_W                           00000002
 R_W                               00000002
 S                                 00000003
-SAMPDONE                          00000026
+SAMPDONE                          00000027
 SMP                               00000007
 SSPADD                            00000093
 SSPBUF                            00000013
@@ -507,13 +522,13 @@ T2CKPS1                           00000001
 T2CON                             00000012
 TMR0                              00000001
 TMR0IE                            00000005
-TMR0IF                            00000002
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE 10
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE 10
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+TMR0IF                            00000002
 TMR1CS                            00000001
 TMR1H                             0000000F
 TMR1IE                            00000000
@@ -566,21 +581,21 @@ _BOREN_OFF                        00003FBF
 _BOREN_ON                         00003FFF
 _CCP1_RB2                         00003FFF
 _CCP1_RB3                         00002FFF
-_CCPMX_RB2                        00003FFF
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE 11
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE 11
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+_CCPMX_RB2                        00003FFF
 _CCPMX_RB3                        00002FFF
 _CHECK_ADI                        0000000A
 _CHECK_INT                        00000008
-_CHECK_SAMPLE                     00000068
+_CHECK_SAMPLE                     00000072
 _CHECK_TMR0                       00000008
-_CNT1                             00000071
-_CNT2                             00000078
-_CNT3                             0000007F
+_CNT1                             0000007B
+_CNT2                             00000082
+_CNT3                             00000089
 _CONFIG                           00002007
 _CPD_OFF                          00003FFF
 _CPD_ON                           00003EFF
@@ -590,8 +605,8 @@ _CP_ON                            00001FFF
 _DEBUG_OFF                        00003FFF
 _DEBUG_ON                         000037FF
 _DEVID1                           00002006
-_END                              00000082
-_ENDLESSLOOP                      00000083
+_END                              0000008C
+_ENDLESSLOOP                      0000008D
 _EXIT_SERVICE                     0000000C
 _EXTCLK                           00003FEF
 _EXTRC_CLKOUT                     00003FFF
@@ -606,41 +621,45 @@ _FOSC_LP                          00003FEC
 _FOSC_XT                          00003FED
 _HANDLE_ADI                       00000016
 _HANDLE_INT                       0000000E
+_HANDLE_INT_END                   00000014
 _HS_OSC                           00003FEE
 _IDLOC0                           00002000
 _IDLOC1                           00002001
 _IDLOC2                           00002002
 _IDLOC3                           00002003
-_INIT_CNT1                        0000006D
-_INIT_CNT2                        00000074
-_INIT_CNT3                        0000007B
+_INIT_CNT1                        00000077
+_INIT_CNT2                        0000007E
+_INIT_CNT3                        00000085
 _INTRC_CLKOUT                     00003FFD
 _INTRC_IO                         00003FFC
-_LOOP                             00000061
+_LOOP                             00000063
 _LP_OSC                           00003FEC
 _LVP_OFF                          00003F7F
 _LVP_ON                           00003FFF
-_MAIN                             00000061
+_MAIN                             00000063
 _MCLRE_OFF                        00003FDF
 _MCLRE_ON                         00003FFF
 _MCLR_OFF                         00003FDF
-_MCLR_ON                          00003FFF
-_PWRTE_OFF                        00003FFF
-MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  15:53:59         PAGE 12
+MPASM  5.43                 CLOCKED.INPUT.ASM   2-20-2017  22:51:10         PAGE 12
 
 
 SYMBOL TABLE
   LABEL                             VALUE 
 
+_MCLR_ON                          00003FFF
+_PWRTE_OFF                        00003FFF
 _PWRTE_ON                         00003FF7
 _RB4_CLR                          00000058
+_RB4_CLR_RET                      00000069
+_RB5_CLR                          0000005A
+_RB5_CLR_RET                      00000072
 _RESTORE_CONTEXT                  00000023
 _SAVE_CONTEXT                     0000001E
 _SERVICE                          00000005
 _SETUP                            00000028
-_START_SAMPLE                     0000005A
+_START_SAMPLE                     0000005C
 _UNHANDLED                        0000000C
-_UPDATE_RB4                       00000061
+_UPDATE_RB4                       00000063
 _WDTE_OFF                         00003FFB
 _WDTE_ON                          00003FFF
 _WDT_OFF                          00003FFB
